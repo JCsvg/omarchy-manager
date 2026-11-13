@@ -16,7 +16,8 @@ serve() {
   "$1" -c 'import sys, textual; assert sys.version_info >= (3, 13) and int(textual.__version__.split(".")[0]) >= 8' 2>/dev/null
 }
 
-if serve python3; then
+# OMARCHY_MANAGER_FORCAR_VENV=1 pula o Python do sistema (usado para testar o caminho do venv).
+if [[ -z ${OMARCHY_MANAGER_FORCAR_VENV:-} ]] && serve python3; then
   exec python3 -m omarchy_manager "$@"
 fi
 
