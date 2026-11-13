@@ -361,7 +361,7 @@ o plugin: seriam duas cópias com versões que divergem a cada atualização.
 
 ### Publicação
 
-Histórico refeito em um commit único antes do primeiro push, com o e-mail
+Histórico refeito antes do primeiro push, com o e-mail
 `noreply` do GitHub no autor, para não expor e-mail pessoal em repositório
 público. Nome de pessoa em `LICENSE`, `pyproject.toml` e `PKGBUILD` trocado
 pelo usuário do GitHub.
