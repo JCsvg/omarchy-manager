@@ -69,6 +69,7 @@ async def test_alt_troca_de_aba_de_qualquer_foco(app):
         assert abas.active == "plugins"
 
         # o caso que prendia: foco no campo de pesquisa. Dígito vira texto, Alt troca.
+        await _pronto(app, pilot)  # deixa o foco assentar na tabela antes de ir para a pesquisa
         await pilot.press("slash")
         await pilot.pause()
         busca = app.query_one("#plugins-busca", Input)
