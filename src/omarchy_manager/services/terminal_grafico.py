@@ -20,7 +20,8 @@ import time
 import tty
 from dataclasses import dataclass
 
-CONSULTA = b"\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\" + b"\x1b[16t" + b"\x1b[c"
+CONSULTA = b"\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\" + b"\x1b[16t" + b"\x1b[>q" + b"\x1b[c"
+_RE_NOME = re.compile(rb"\x1bP>\|([^\x1b]*)\x1b\\")
 _RE_DA1 = re.compile(rb"\x1b\[\?([0-9;]*)c")
 _RE_CELULA = re.compile(rb"\x1b\[6;(\d+);(\d+)t")
 _RE_KITTY = re.compile(rb"\x1b_Gi=31;([^\x1b]*)\x1b\\")
@@ -34,6 +35,7 @@ class Capacidades:
     cel_a: int = 0
     consultado: bool = False
     respondeu: bool = False
+    nome: str = ""  # resposta ao XTVERSION, por exemplo "foot(1.28.0)"
 
 
 _cache: Capacidades | None = None
@@ -96,7 +98,8 @@ def sondar(timeout: float = 0.6) -> Capacidades:
         sixel, kitty, cel_l, cel_a, respondeu = interpretar_resposta(buf)
         if not (cel_l and cel_a):
             cel_l, cel_a = _celula_por_ioctl()
-        caps = Capacidades(sixel, kitty, cel_l, cel_a, True, respondeu)
+        n = _RE_NOME.search(buf)
+        caps = Capacidades(sixel, kitty, cel_l, cel_a, True, respondeu, n.group(1).decode("ascii", "replace") if n else "")
     _cache = caps
     return caps
 

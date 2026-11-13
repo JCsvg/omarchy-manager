@@ -457,3 +457,39 @@ Destaque do foco: o botão "primário" era pintado de cor cheia mesmo sem foco
 e parecia ser o selecionado. Agora só o botão em foco tem cor cheia (a de
 destaque, ou a de erro em ação destrutiva); os outros ficam neutros. O foco
 inicial de toda confirmação é `Cancelar`.
+
+## 14. Transparência do Foot depois de trocar de tema (versão 0.6.0)
+
+Sintoma: no Foot com fundo transparente, a TUI ficava opaca depois de
+`Aplicar` e só voltava ao normal ao abrir de novo.
+
+Causa: não era o caminho de recolorir da TUI. O `omarchy theme set` chama
+`omarchy-theme-set-foot`, que escreve em todo Foot aberto um
+`OSC 11;[alpha]cor`. O alpha vem só do `foot.ini` do tema; se o tema não
+define alpha, o script manda `[100]`, opaco, e ignora o `alpha` que o usuário
+pôs em `~/.config/foot/foot.ini`. Com `alpha-mode=all` a cor que a TUI pinta
+em cada célula não muda nada: o que mudou foi o alpha do terminal. Uma janela
+nova lê o `foot.ini` de novo e nasce transparente, daí a impressão de que
+reabrir consertava. Medido em uma janela de teste: região com o papel de
+parede visível na abertura, cor chapada depois do `OSC 11;[100]`, papel de
+parede de volta depois de `OSC 11;[25]`.
+
+Correção: ao recarregar a paleta (abertura, `Aplicar`, prévia ao vivo,
+restauração, `F5`, saída com restauração), a TUI reenvia o OSC 11 ao próprio
+terminal com o alpha lido do `foot.ini` do usuário (seguindo `include=`,
+seção `colors-dark` ou `colors-light` conforme o tema). Só quando o terminal
+responde ao XTVERSION como Foot (o `TERM` não serve: o Omarchy configura
+`term=xterm-256color`) e o alpha configurado é menor que 1.
+
+Limites: só a janela da TUI é corrigida. Os outros Foot abertos continuam
+opacos depois de uma troca de tema, o que é comportamento do script do
+Omarchy e acontece também quando o tema é trocado por fora. Dentro do Herdr
+ou do tmux o XTVERSION não é do Foot e nada é enviado. Uma troca de tema
+feita por fora com a TUI aberta só é corrigida no próximo `F5`.
+
+Também ajustado: `aplicar_paleta` registra o tema do Textual sempre com o
+mesmo nome por modo, então passou a pedir `refresh_css` explicitamente.
+
+Sentido inverso (algo opaco já na abertura em tema claro): o teste confere
+que tela, abas e painéis têm todos a cor de fundo do tema, em escuro e em
+claro. Nenhum contêiner com cor própria foi encontrado.

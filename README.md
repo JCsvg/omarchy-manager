@@ -4,7 +4,7 @@ Gerenciador em modo texto (TUI) para o Omarchy: atalhos do Hyprland, plugins
 do Omarchy Shell e temas, em um único lugar, com teclado e mouse, em
 português do Brasil e nas cores do tema ativo.
 
-Versão 0.5.0. Feito para Omarchy com Hyprland em configuração Lua (testado
+Versão 0.6.0. Feito para Omarchy com Hyprland em configuração Lua (testado
 com Omarchy 4.5 e Hyprland 0.56.2).
 
 ## Instalar (como plugin do Omarchy)
@@ -160,6 +160,11 @@ meio.
 Nada é gravado em `/usr/share/omarchy/`.
 
 ## Limites conhecidos
+
+- Foot com fundo transparente: o `omarchy theme set` deixa opacos os Foot que
+  já estão abertos (ele ignora o `alpha` do seu `foot.ini`). O gerenciador
+  devolve a transparência à própria janela; as outras só voltam ao normal
+  quando reabertas. Dentro do Herdr ou do tmux ele não consegue corrigir.
 
 - Captura de `Super + tecla` na edição de atalhos: usa um submap temporário
   do Hyprland. A lógica tem teste, mas falta a validação com uma pessoa no

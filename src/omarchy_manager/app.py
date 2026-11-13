@@ -12,7 +12,7 @@ from textual.binding import Binding
 from textual.widgets import Footer, Header, TabbedContent, TabPane
 
 from omarchy_manager import __version__
-from omarchy_manager.services import caminhos, terminal_grafico
+from omarchy_manager.services import caminhos, terminal_foot, terminal_grafico
 from omarchy_manager.services.ai_launcher import AiLauncher
 from omarchy_manager.services.hyprland import HyprlandService
 from omarchy_manager.services.log import configurar_log, logger
@@ -107,9 +107,25 @@ class OmarchyManagerApp(App[None]):
         paleta = paleta_atual()
         nome = "omarchy-claro" if not paleta.escuro else "omarchy-escuro"
         self.register_theme(tema_textual(paleta, nome))
+        if self.theme == nome:
+            self.refresh_css()  # mesmo nome, cores novas: o Textual não refaz o CSS sozinho
         self.theme = nome
+        self.reafirmar_transparencia(paleta)
         if paleta.ausentes:
             logger.info("paleta sem as chaves %s, usando ANSI", ", ".join(paleta.ausentes))
+
+    def reafirmar_transparencia(self, paleta=None) -> None:
+        """Devolve ao Foot o alpha do usuário, que o `omarchy theme set` troca por opaco."""
+        paleta = paleta or paleta_atual()
+        seq = terminal_foot.sequencia_alpha(paleta.background, paleta.escuro)
+        if not seq:
+            return
+        try:
+            if self._driver is not None:
+                self._driver.write(seq)
+                self._driver.flush()
+        except Exception:
+            pass
 
     def push_screen(self, *args, **kwargs):
         # Imagem do protocolo kitty não é apagada por texto escrito por cima: tira antes do diálogo.
@@ -179,7 +195,8 @@ class OmarchyManagerApp(App[None]):
     async def action_quit(self) -> None:
         for aba in self.query(AbaTemas):
             aba.gravar_padrao_pendente()
-        self.previa.restaurar()
+        if self.previa.restaurar():
+            self.reafirmar_transparencia()
         self.exit()
 
     def action_recarregar(self) -> None:
@@ -227,7 +244,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         app.run()
     finally:
-        previa.restaurar()
+        if previa.restaurar():
+            # a restauração também passa pelo `omarchy theme set`, que deixa o Foot opaco
+            paleta = paleta_atual()
+            sys.__stdout__.write(terminal_foot.sequencia_alpha(paleta.background, paleta.escuro))
+            sys.__stdout__.flush()
     return 0
 
 
