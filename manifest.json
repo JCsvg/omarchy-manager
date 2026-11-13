@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.jcsvg.omarchy-manager",
+  "name": "Omarchy Manager",
+  "version": "0.2.0",
+  "author": "JCsvg",
+  "license": "MIT",
+  "repository": "https://github.com/JCsvg/omarchy-manager",
+  "description": "Gerenciador em modo texto para atalhos do Hyprland, plugins do Omarchy Shell e temas. O ícone na barra abre a TUI em um terminal.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Omarchy Manager",
+    "description": "Abre o gerenciador de atalhos, plugins e temas em um terminal.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

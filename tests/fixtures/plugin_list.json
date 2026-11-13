@@ -1,0 +1,7 @@
+[
+{"id":"omarchy.clipboard","name":"Clipboard","kinds":["overlay"],"enabled":true,"active":false,"canDisable":true,"firstParty":true,"clonedFrom":""},
+{"id":"omarchy.bar","name":"Bar","kinds":["bar"],"enabled":false,"active":false,"canDisable":false,"firstParty":true,"clonedFrom":""},
+{"id":"io.github.nipsen.dell-power","name":"Dell Power","kinds":["bar-widget"],"enabled":true,"active":false,"canDisable":true,"firstParty":false,"clonedFrom":""},
+{"id":"bibek.lock","name":"Better Lock","kinds":["service"],"enabled":true,"active":false,"canDisable":true,"firstParty":false,"clonedFrom":"omarchy.lock"},
+{"id":"sem.pasta","name":"Fantasma","kinds":["panel"],"enabled":false,"active":false,"canDisable":true,"firstParty":false,"clonedFrom":""}
+]

@@ -1,0 +1,51 @@
+# Maintainer: JCsvg
+#
+# Pacote local, construído a partir de um tarball gerado por `git archive`
+# (ver packaging/empacotar.sh). Todas as dependências estão nos repositórios
+# oficiais do Arch (extra/python-textual e extra/python-qrcode, conferidos em 2026-11-13);
+# nada vem do AUR e nada é vendorizado. Ver DECISOES.md, seção 8.
+
+pkgname=omarchy-manager
+pkgver=0.2.0
+pkgrel=1
+pkgdesc="Gerenciador TUI de atalhos, plugins e temas do Omarchy"
+arch=('any')
+url="https://github.com/JCsvg/omarchy-manager"
+license=('MIT')
+depends=(
+  'python>=3.13'
+  'python-textual>=8'
+  'python-qrcode'
+  'lua'       # varredura dos binds Lua (services/lua_scan.lua)
+  'omarchy'   # comandos `omarchy ...`
+  'hyprland'  # hyprctl
+)
+optdepends=(
+  'imagemagick: prévia de fundos na aba Temas'
+  'chafa: prévia Sixel alternativa'
+  'xdg-terminal-exec: abrir o chat da IA no terminal padrão'
+)
+makedepends=('python-build' 'python-installer' 'python-wheel' 'python-hatchling')
+checkdepends=('python-pytest' 'python-pytest-asyncio')
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('SKIP')  # tarball local; o empacotar.sh imprime o hash real
+
+build() {
+  cd "$pkgname-$pkgver"
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  # Só os unitários: os de integração abrem a TUI headless e demoram.
+  PYTHONPATH=src python -m pytest -q tests/unit -p no:warnings
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 agents/criador-de-temas.md "$pkgdir/usr/share/$pkgname/agents/criador-de-temas.md"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 DECISOES.md "$pkgdir/usr/share/doc/$pkgname/DECISOES.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

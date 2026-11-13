@@ -1,0 +1,8 @@
+# Falta foreground, blue e selection; yellow está inválido.
+mode = "dark"
+accent = "#ff8800"
+background = "#101010"
+muted = "#555555"
+red = "#ff0000"
+green = "#00ff00"
+yellow = "amarelo"

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "omarchy-manager"
+version = "0.2.0"
+description = "Gerenciador TUI de atalhos, plugins e temas do Omarchy"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "MIT" }
+authors = [{ name = "JCsvg" }]
+dependencies = [
+    "textual>=8.0,<9",
+    "qrcode>=7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+]
+
+[project.scripts]
+omarchy-manager = "omarchy_manager.app:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/omarchy_manager"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/omarchy_manager", "agents", "README.md", "DECISOES.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["src"]

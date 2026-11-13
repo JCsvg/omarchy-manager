@@ -1,0 +1,41 @@
+#!/bin/bash
+# Abre o omarchy-manager a partir da pasta do plugin (ou de um clone do repo),
+# sem precisar de pacote instalado.
+#
+# 1. Se o Python do sistema já tem o Textual 8 (pacman -S python-textual),
+#    roda direto com ele.
+# 2. Senão, cria uma vez um ambiente próprio em
+#    ~/.local/share/omarchy-manager/venv (com uv, ou python -m venv) e instala
+#    ali só o textual e o qrcode, vindos do PyPI.
+set -euo pipefail
+
+raiz=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)
+export PYTHONPATH="$raiz/src${PYTHONPATH:+:$PYTHONPATH}"
+
+serve() {
+  "$1" -c 'import sys, textual; assert sys.version_info >= (3, 13) and int(textual.__version__.split(".")[0]) >= 8' 2>/dev/null
+}
+
+if serve python3; then
+  exec python3 -m omarchy_manager "$@"
+fi
+
+venv="${XDG_DATA_HOME:-$HOME/.local/share}/omarchy-manager/venv"
+if [[ ! -x $venv/bin/python ]] || ! serve "$venv/bin/python"; then
+  echo "Primeira execução: preparando o ambiente Python em $venv"
+  echo "(instala textual e qrcode do PyPI, só dentro dessa pasta)"
+  mkdir -p "$(dirname "$venv")"
+  if command -v uv >/dev/null; then
+    uv venv --python 3.13 "$venv"
+    uv pip install --python "$venv/bin/python" "textual>=8,<9" "qrcode>=7"
+  else
+    python3 -m venv "$venv"
+    "$venv/bin/pip" install --quiet "textual>=8,<9" "qrcode>=7"
+  fi
+  if ! serve "$venv/bin/python"; then
+    echo "Não foi possível preparar o ambiente. Alternativa: sudo pacman -S python-textual python-qrcode" >&2
+    read -r -p "Enter para fechar. " _ || true
+    exit 1
+  fi
+fi
+exec "$venv/bin/python" -m omarchy_manager "$@"

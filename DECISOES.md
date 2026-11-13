@@ -1,0 +1,367 @@
+# Decisões técnicas, omarchy-manager
+
+Registro das provas da Fase 0 (plano, seção 13) e das decisões que elas
+sustentam. Data da rodada: 2026-11-13, nesta máquina (Omarchy, Hyprland 0.56.2,
+Foot 1.28.0, Herdr 0.9.5, Python 3.13.18 em venv, Textual 8.2.8).
+
+Os scripts das provas ficam em `docs/provas/`. Tudo o que está marcado como
+"requer validação manual do JC" não foi testado com uma pessoa no teclado e
+não deve ser lido como validado.
+
+## 1. Captura de combinações com Super (plano 6.3)
+
+### O que foi verificado
+
+1. O Hyprland do Omarchy usa configuração em Lua. `hyprctl keyword` responde
+   `keyword can't work with non-legacy parsers. Use eval.` Portanto a via
+   clássica de criar submap e binds em tempo de execução por `keyword` não
+   existe aqui.
+2. `hyprctl eval '<lua>'` executa Lua dentro do compositor. A API `hl`
+   expõe, entre outros: `bind`, `unbind`, `define_submap`, `dsp.submap`,
+   `get_current_submap`, `on`, `is_key_down`, `dispatch`, `exec_cmd`.
+3. `hl.bind("SUPER + CTRL + ALT + SHIFT + F24", hl.dsp.exec_cmd("true"), {description=...})`
+   via `hyprctl eval` criou um bind visível em `hyprctl binds -j` na hora, e
+   `hl.unbind(...)` o removeu. A opção `submap` dentro da tabela de opções
+   foi ignorada (o bind ficou no submap raiz); submaps são criados por
+   `hl.define_submap(nome, function() ... end)` (assinatura confirmada:
+   o 2º argumento tem de ser função).
+4. `hl.on("input.keyboard.key", fn)` existe e dispara a cada tecla. Com um
+   `wtype -k F24` sintético o handler recebeu 3 números `(a, b, estado)`;
+   `estado` é 1 no press e 0 no release, `a` veio 9 tanto para F24 quanto
+   para Shift+F23, então esse argumento não identifica a tecla de forma
+   útil sem mais investigação. O handler devolver `true` não impediu nada
+   de observável. A assinatura é `HL.EventSubscription` com métodos
+   `remove()` e `is_active()`; `unsubscribe` não existe (um hook de prova
+   ficou vivo até um `hyprctl reload`, que o removeu; `configerrors` ficou
+   vazio e os 254 binds voltaram iguais).
+5. Precedente no próprio Omarchy: `default/hypr/bindings/utilities.lua`
+   cria binds temporários com `hl.bind` e os liga/desliga com
+   `set_enabled`, e avisa que `hl.unbind(chord)` remove TODOS os binds
+   daquele chord, inclusive os do usuário.
+6. O Textual 8 fala o protocolo de teclado do kitty (há
+   `_keyboard_protocol.py` e o parser reconhece o modificador `super`).
+   Isso só vale para teclas que chegam ao terminal, ou seja, que o Hyprland
+   não consumiu antes.
+
+### Decisão
+
+Solução 1 do plano (submap temporário) é a escolhida, com esta forma:
+
+- a TUI pede, por `hyprctl eval`, um `hl.define_submap("omarchy-manager-capture", ...)`
+  com um bind por tecla de uma lista conhecida (letras, dígitos, F1-F24,
+  teclas de navegação, `code:NN` do ABNT2 e teclas XF86 multimídia) e a
+  opção de ignorar modificadores, cujo handler Lua lê o estado de Super,
+  Ctrl, Alt e Shift com `hl.is_key_down` e grava `modmask<TAB>tecla` em um
+  arquivo de troca dentro de `$XDG_RUNTIME_DIR`;
+- `Esc` tem bind próprio que só volta ao submap raiz;
+- a TUI entra no submap com `hl.dispatch("submap", ...)`, espera o arquivo,
+  e sempre sai com `hl.dsp.submap("reset")` em `finally`, inclusive por
+  timeout de 15 s;
+- nenhum bind do usuário é removido: o submap é separado e o retorno ao
+  submap raiz restaura tudo.
+
+Motivo: usa só API já confirmada por prova (`define_submap`, `bind`,
+`dispatch`, `is_key_down`) e tem precedente de uso pelo próprio Omarchy;
+não depende de protocolo Wayland de inibição, que o Foot e o Herdr não
+pedem por conta própria e exigiria um cliente gráfico extra.
+
+A solução 2 (capturador Wayland com inibição de atalhos) fica como
+alternativa documentada caso o submap falhe em alguma tecla. Não foi
+prototipada.
+
+**Requer validação manual do JC:** pressionar `Super + tecla` dentro do
+capturador, no Foot e no Herdr, e confirmar que a ação antiga não dispara,
+que `Esc` cancela e que `<`, `>`, `ç`, acentos, F-keys e teclas de mídia
+são reconhecidos. Nada disso foi testado com uma pessoa no teclado. O
+`is_key_down("SUPER_L")` deu `Unknown keysym`; o nome correto do keysym
+(`Super_L`) ainda precisa ser confirmado nessa validação.
+
+## 2. Hover e clique no terminal (plano, Fase 0)
+
+Prova `docs/provas/prova_hover_clique.py`, headless com o Pilot do Textual:
+
+- hover sobre um `Button` liga `mouse_hover` e expõe o `tooltip`: OK;
+- clique no botão dispara `Button.Pressed` (1 clique = 1 evento): OK;
+- clique em uma linha da `DataTable` move o cursor e dispara
+  `RowHighlighted`; `RowSelected` só vem com Enter ou segundo clique na
+  mesma linha. A interface usa `RowHighlighted` para selecionar e Enter
+  para ativar.
+
+**Requer validação manual do JC:** a entrega real dos eventos de mouse
+pelo Foot e pelo Herdr (ambos suportam SGR mouse, mas não foi testado ao
+vivo nesta sessão). O terminal desta sessão reportou `TERM_PROGRAM=herdr`.
+
+## 3. Prévia de imagem com Sixel e fallback (plano 8.1)
+
+- `chafa` não está instalado.
+- `img2sixel` (libsixel 1.10.5) devolve 0 bytes e código 0 para o PNG do
+  fundo atual, tanto por caminho quanto por stdin, inclusive com PPM na
+  entrada. Não serve como gerador confiável aqui.
+- `magick <png> -resize 200x sixel:-` gerou 27.214 bytes começando com
+  `ESC P 0;1;0 q`, Sixel válido.
+- Fallback: `magick <png> -resize 40x20! -depth 8 ppm:-` gera um P6 de
+  2.413 bytes que um parser de 10 linhas em Python puro converte em
+  blocos `▀` com cor 24 bits, sem PIL.
+
+Decisão: `ThemePreview` tenta, nesta ordem, `chafa` (se existir), `magick
+... sixel:-` e o fallback por PPM em blocos. O Sixel só é emitido quando o
+terminal se declara capaz (consulta DA1 ou `TERM_PROGRAM`/`TERM` em
+`foot`); dentro da área do Textual a prévia padrão é a de blocos, porque o
+Textual redesenha células e corromperia uma imagem Sixel sobreposta. O
+Sixel fica para um modo "ver em tamanho maior" que suspende a TUI.
+
+**Requer validação manual do JC:** ver a imagem Sixel no Foot (suporta) e
+no Herdr (não confirmado).
+
+## 4. Troca dinâmica de cores (plano, seção 5)
+
+Prova `docs/provas/prova_cores_dinamicas.py`: dois `Theme` do Textual
+construídos a partir de dicionários no formato do `colors.toml`,
+registrados com `App.register_theme` e trocados com `app.theme = nome` com
+a aplicação aberta. `background` e `foreground` mudaram de `#1A1B26` /
+`#A9B1D6` para `#eff1f5` / `#4C4F69`. OK.
+
+Decisão: `services/paleta.py` lê `~/.local/state/omarchy/current/theme/colors.toml`
+(o mesmo caminho que `omarchy theme set` mantém), aplica fallback ANSI
+por chave ausente e registra o tema no Textual; a aplicação relê a paleta
+ao abrir, em `F5` e depois de aplicar um tema.
+
+## 5. mDNS, código de confirmação e HTTPS entre 2 máquinas (plano, seção 10)
+
+Não executado. Há 1 máquina nesta sessão. **Requer validação manual do JC
+com 2 computadores no mesmo Wi-Fi.** A Fase 6 fica depois das Fases 1 a 4.
+
+## 6. Outras descobertas que mudaram o desenho
+
+1. `hyprctl binds -j` reporta todo bind Lua como `dispatcher: "__lua"` e
+   `arg: "<número>"`. O comando real não está lá. O próprio Omarchy
+   (`omarchy-menu-keybindings`) resolve isso rodando o `hyprland.lua` do
+   usuário em um `lua -E` com um stub de `hl`, só para coletar os binds.
+   O gerenciador faz o mesmo, em `services/lua_scan.py`, e aproveita para
+   registrar o arquivo de origem de cada bind (`debug.getinfo`), que é o
+   que preenche a coluna Origem (`Omarchy`, `usuário`, `plugin`,
+   `gerenciador`).
+2. `omarchy theme list` devolve nomes de exibição ("Tokyo Night");
+   `omarchy theme dir` e `omarchy theme set` querem o slug ("tokyo-night").
+   O slug atual está em `~/.local/state/omarchy/current/theme.name`. O
+   gerenciador resolve slug a partir dos diretórios reais e usa o nome de
+   exibição só para mostrar.
+3. Plugins de terceiros moram em `~/.config/omarchy/plugins/<id>`; os
+   nativos em `$OMARCHY_PATH/shell/plugins/<pasta>` com pasta diferente do
+   id (`clipboard` -> `omarchy.clipboard`). A lista JSON não traz o caminho,
+   então o catálogo indexa os `manifest.json` dos dois lugares por `id`.
+4. Hyprland 0.56.0 emitiu JSON inválido em `binds -j` (nota no script do
+   Omarchy). `HyprlandService` tem fallback para a saída textual.
+5. Correção: na primeira rodada anotei que `python-textual` e `python-pytest`
+   não existiam nos repositórios, mas o comando usado (`pacman -Q`) só olha
+   o que está instalado. `pacman -Ss` mostra `extra/python-textual 8.2.8-2`,
+   `extra/python-rich`, `extra/python-pytest` e os `python-build`,
+   `python-installer`, `python-hatchling`. O venv com `uv` continua sendo o
+   ambiente de desenvolvimento; o pacote usa só dependências oficiais (seção 8).
+
+## 7. IA para temas (plano, seção 9 e Fase 5)
+
+Conferido no `--help` de cada CLI instalada em 2026-11-13:
+
+| CLI | Como recebe o agente | Prompt inicial |
+|---|---|---|
+| `claude` | `--append-system-prompt-file AGENTE-CRIADOR-DE-TEMAS.md` e `CLAUDE.md` no diretório | argumento posicional |
+| `codex` | `AGENTS.md` no diretório | argumento posicional `[PROMPT]` |
+| `opencode` | `AGENTS.md` no diretório | `--prompt <texto>` |
+| `copilot` | `AGENTS.md` no diretório | nenhum: `-p/--prompt` é só modo não interativo |
+
+Terminal: `omarchy-launch-terminal` usa `xdg-terminal-exec --dir=<pasta>`
+(`$TERMINAL=xdg-terminal-exec` nesta máquina), então esse é o adaptador
+preferido; `foot`, `alacritty`, `ghostty`, `kitty` e `wezterm` são
+alternativas, cada um com a própria lista de argumentos. Nenhum comando é
+montado por concatenação.
+
+Decisões:
+
+- o workspace é `~/.local/share/omarchy-manager/theme-workspaces/<slug>/`,
+  com o agente copiado duas vezes (nome neutro e nome que cada IA lê
+  sozinha) e, se escolhido, o tema base copiado para `base/<slug>/` sem
+  `.git`;
+- o diálogo recusa abrir sem IA instalada ou sem terminal e explica o que
+  falta;
+- o agente instrui a só copiar para `~/.config/omarchy/themes/` após um
+  "sim" explícito; o gerenciador não importa o tema sozinho (a importação
+  pós-chat fica para depois: o usuário usa `Atualizar` na aba Temas).
+
+**Requer validação manual do JC:** abrir cada adaptador de verdade e ver se
+o prompt inicial chega como esperado (os testes usam executáveis falsos).
+
+## 9. Compartilhamento na rede local (plano, seção 10 e Fase 6)
+
+Implementado e testado em 1 máquina, com os 2 lados no loopback
+(`tests/integration/test_lan_loopback.py`):
+
+- pacote `.omarchy-bundle` (tar.gz com `bundle.json`, `payload/`,
+  `checksums.sha256`), exclusão de `.git`, credenciais (`*.pem`, `*.key`,
+  `.env`, `*token*`, `*secret*`…), caches, logs, backups e links para fora
+  do projeto; limites de 500 MiB, 10.000 arquivos e 256 MiB por arquivo;
+- validação do pacote: hash SHA-256 do arquivo, caminho absoluto, `..`,
+  entrada que não é arquivo regular (link, dispositivo), lista do
+  `bundle.json` divergente do conteúdo, checksum e tamanho por arquivo;
+  tudo com teste de rejeição;
+- certificado autoassinado de 1 dia gerado por `openssl` (chave EC P-256),
+  TLS 1.3, fingerprint SHA-256 do certificado;
+- código de confirmação de 6 palavras (48 bits) derivado por HMAC da
+  fingerprint e do segredo: os 2 lados calculam o mesmo valor;
+- o cliente conecta com `CERT_NONE` e fixa a fingerprint do certificado
+  recebido antes de enviar o segredo (`Bearer`); fingerprint errada recusa
+  sem vazar o segredo; segredo errado recebe 403;
+- 1 download ou 10 minutos; depois 410; `encerrar()` apaga o segredo, o
+  certificado e o pacote temporário;
+- importação: plugin extraído em temporário, mostrado com manifesto e lista
+  de executáveis, copiado para `~/.config/omarchy/plugins/<id>` só após
+  confirmação e NUNCA ligado (não existe chamada a `plugin enable` nesse
+  caminho); tema vai para `~/.config/omarchy/themes/<slug>` e aparece na
+  prévia, sem `theme set`; conflito oferece cancelar ou substituir após
+  backup; sem renomear ID de plugin;
+- fallback sem par: `Guardar como arquivo` em `~/Downloads`, com o hash
+  impresso para conferência por outro canal;
+- `omarchy-manager share <id>` e `omarchy-manager receive [--convite]`.
+
+Decisões:
+
+- mDNS pelo `avahi-publish`/`avahi-browse` do sistema (o `avahi-daemon`
+  está ativo nesta máquina; a stdlib do Python não fala mDNS e `zeroconf`
+  não está instalado). Sem avahi, o anúncio é pulado e o convite colado à
+  mão continua funcionando.
+- QR Code: não há biblioteca no sistema; o convite é um texto
+  `omarchy-manager://host:porta/fingerprint/segredo` que a interface mostra
+  para copiar ou gerar QR por fora. Fica como melhoria.
+
+**Não validado, exige 2 máquinas reais (não simulado):** descoberta mDNS
+entre dispositivos distintos, roteamento em Wi-Fi doméstico, rede com
+isolamento de clientes (quando bloqueia, a interface só oferece o arquivo),
+IPv6 entre hosts, cancelamento no meio da transferência pela rede. O
+loopback prova o protocolo, não a rede.
+
+## 8. Empacotamento (plano, Fase 7)
+
+Decisão: `packaging/PKGBUILD` com `depends=(python>=3.13 python-textual>=8
+lua omarchy hyprland)`, todos de repositório oficial (`extra/python-textual
+8.2.8-2`, conferido com `pacman -Ss` em 2026-11-13). Sem AUR e sem
+vendorizar.
+
+Motivo: a dúvida anterior nascia de um comando errado (ver seção 6, item 5).
+Com o pacote oficial disponível, vendorizar o Textual (mais rich,
+markdown-it-py, mdurl, platformdirs, pygments) duplicaria 5 pacotes que o
+sistema já tem, perderia as atualizações de segurança do repositório e
+precisaria de rede no `build()`, o que o makepkg desaconselha. Depender do
+AUR faria a instalação exigir um helper como `yay`.
+
+Como o pacote é construído e testado:
+
+- `packaging/empacotar.sh`: `git archive HEAD` gera o tarball (sha256
+  impresso), `makepkg -f --cleanbuild` constrói a wheel com
+  `python -m build`, roda `check()` (os testes unitários dentro do build),
+  instala com `python -m installer` e copia `agents/criador-de-temas.md`
+  para `/usr/share/omarchy-manager/agents/` (o `AiLauncher` já procura ali),
+  README, DECISOES e LICENSE; depois roda `namcap`;
+- resultado em 2026-11-13: `omarchy-manager-0.1.0-1-any.pkg.tar.zst`,
+  169.376 bytes, namcap sem `E:`. Os `W:` são dois falsos positivos
+  conhecidos: módulos `omarchy_manager.*` apontados como "uninstalled
+  dependency" (o namcap não vê o próprio pacote) e `lua`, `omarchy`,
+  `hyprland` como "may not be needed" (são chamados por subprocesso, não
+  importados);
+- `sudo pacman -U` instalou o pacote nesta máquina; `omarchy-manager
+  --versao` responde `0.1.0` em `/usr/bin`;
+- `packaging/testar-conta-limpa.sh`: roda o binário instalado com `env -i`,
+  HOME e XDG_* em um temporário vazio e PATH só do sistema. Passou: import
+  vem de `/usr/lib/python3.14/site-packages`, as 3 abas abrem, 24 temas do
+  sistema aparecem, só o HOME temporário recebe arquivos, nada em
+  `/usr/share/omarchy`.
+
+Limite: isso simula uma conta nova, não é uma. O compositor, o DBus e o
+`omarchy-shell` em execução são os da sessão do JC, e sem
+`HYPRLAND_INSTANCE_SIGNATURE` o ambiente limpo lista 0 atalhos e 0 plugins
+(esperado). **Requer decisão do JC** se vale criar um usuário real e logar
+nele para validar.
+
+Instalados nesta máquina durante a Fase 7, com `sudo pacman -S` (todos
+oficiais e removíveis com `pacman -Rns`): `python-build`,
+`python-installer`, `python-hatchling`, `python-textual`, `namcap`,
+`python-pytest`, `python-pytest-asyncio`, e o próprio `omarchy-manager`.
+A configuração do Hyprland e do Omarchy do JC não foi tocada nesta fase.
+
+## 10. Rodada de ajustes após o primeiro uso real (versão 0.2.0)
+
+### Troca de abas
+
+Relato: não dava para alternar entre as abas. Em pseudoterminal, com as
+sequências do protocolo kitty e as legadas, as teclas `1` `2` `3` e o clique
+na aba funcionaram enquanto o foco estava em uma tabela. O caso que prende é
+o foco em um campo de texto (a pesquisa): ali os dígitos viram texto, e não
+existia nenhum atalho de aba que funcionasse de dentro do campo. A tentativa
+de reproduzir em uma janela real do Foot foi abandonada para não roubar o
+foco de quem estava usando a máquina.
+
+Correção: `Alt+L` / `Alt+→` e `Alt+H` / `Alt+←` com prioridade sobre o widget
+em foco, mais `4` para a aba Config. Testes cobrem a troca com o foco na
+pesquisa e o clique em cada aba. Se o problema original tiver outra causa
+(por exemplo, algo específico do Herdr), ela não foi encontrada.
+
+### Prévia ao vivo e a soltura do Ctrl
+
+O Textual 8.2.8 liga o protocolo kitty com as flags 1, 8 e 16 (desambiguar,
+reportar todas as teclas, texto associado), mas não a flag 2 (tipos de
+evento). Sem ela o terminal não envia a soltura de tecla, e o parser do
+Textual nem aceitaria o campo extra. Portanto a soltura do Ctrl não chega à
+aplicação por nenhum terminal.
+
+Decisão: o mecanismo garantido é a tecla `v`, que liga e desliga a prévia.
+Para o Ctrl, a aplicação pergunta ao Hyprland (`hl.is_key_down("Control_L")`
+e `Control_R` por `hyprctl eval`, 4 vezes por segundo, só com a aba Temas
+ativa e o terminal em foco). A chamada funciona e devolve falso com a tecla
+solta; um Ctrl sintético do `wtype` não é enxergado por ela, então o caso
+"pressionado" só foi testado com o estado injetado nos testes. **Requer
+validação manual com o teclado físico.** Se o Hyprland não responder, a
+sondagem se desliga sozinha.
+
+Garantia de restauração: o tema e o fundo originais vão para
+`previa-original.json` antes do primeiro `omarchy theme set`. Restauram:
+`v`, `Esc`, troca de aba, `q`, o `finally` de `main()`, `atexit`, SIGTERM e
+SIGHUP, e a abertura seguinte se o arquivo ainda existir. Debounce de 0,5 s.
+
+### Traduções dos plugins
+
+Arquivo embutido com 80 plugins (os que existiam na máquina de
+desenvolvimento em 2026-11-13) e arquivo do usuário com prioridade. A coluna
+"Ações" da tabela deu lugar à coluna "Descrição"; as ações continuam nos
+botões e nas teclas.
+
+### QR Code
+
+`extra/python-qrcode` existe no repositório oficial e entrou nas
+dependências; sem a biblioteca, o programa usa `qrencode -t UTF8`; sem os
+dois, mostra só o convite em texto. Desenho em blocos de meia altura, preto
+sobre branco fixo para ser legível em tema claro e escuro.
+
+### Distribuição como plugin do Omarchy
+
+`omarchy plugin add <url-git>` clona o repositório inteiro para
+`~/.config/omarchy/plugins/<id>/` e exige `manifest.json` na raiz, com
+`schemaVersion` 1, um ponto de entrada por tipo declarado e nenhum link
+simbólico. O formato só conhece os tipos `bar`, `bar-widget`, `menu`,
+`overlay`, `panel` e `service`: não há como um plugin registrar atalho de
+teclado, item no menu do Omarchy ou comando no PATH.
+
+Decisão: o repositório é o plugin. Tipo `bar-widget`, com um ícone que chama
+`omarchy-launch-tui` apontando para `bin/omarchy-manager` dentro da pasta do
+plugin. Esse script usa o Python do sistema se ele já tiver o Textual 8 e,
+se não, cria um venv em `~/.local/share/omarchy-manager/venv` com `uv` (ou
+`python -m venv`) na primeira execução. O código roda direto de `src/`, por
+`PYTHONPATH`, sem instalar nada no sistema.
+
+O pacote pacman continua possível pelo `PKGBUILD`, mas não deve conviver com
+o plugin: seriam duas cópias com versões que divergem a cada atualização.
+
+### Publicação
+
+Histórico refeito em um commit único antes do primeiro push, com o e-mail
+`noreply` do GitHub no autor, para não expor e-mail pessoal em repositório
+público. Nome de pessoa em `LICENSE`, `pyproject.toml` e `PKGBUILD` trocado
+pelo usuário do GitHub.
