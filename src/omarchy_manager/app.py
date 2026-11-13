@@ -164,6 +164,8 @@ class OmarchyManagerApp(App[None]):
     @on(TabbedContent.TabActivated)
     def _aba_mudou(self) -> None:
         abas = self.query_one("#abas", TabbedContent)
+        if abas.active != "temas":
+            self.query_one(AbaTemas).gravar_padrao_pendente()
         if self._aba_alvo and abas.active != self._aba_alvo and time.monotonic() - self._aba_alvo_em < 0.6:
             abas.active = self._aba_alvo  # confirmação atrasada de uma troca anterior
             return
@@ -175,6 +177,8 @@ class OmarchyManagerApp(App[None]):
         self.call_after_refresh(self.focar_tabela)
 
     async def action_quit(self) -> None:
+        for aba in self.query(AbaTemas):
+            aba.gravar_padrao_pendente()
         self.previa.restaurar()
         self.exit()
 

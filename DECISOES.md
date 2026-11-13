@@ -425,3 +425,21 @@ O que foi visto e o que não foi:
 - não verificado: protocolo kitty em um kitty ou Ghostty de verdade (nenhum
   dos dois está instalado), o comportamento dentro do Herdr e do tmux (a
   detecção decide pelo que eles responderem), e rolagem com imagem.
+
+## 12. Troca de fundo com h/l e padrão automático (versão 0.4.0)
+
+Na aba Temas, `h`/`l` e as setas esquerda e direita percorrem em ciclo os
+fundos do tema em foco. O fundo exibido passa a ser o padrão do tema, gravado
+em `[theme_defaults]` pelo mesmo caminho atômico, 0,6 s depois da última
+tecla. A gravação pendente é forçada ao mudar de tema, trocar de aba, abrir a
+lista de fundos, sair e desmontar a aba.
+
+- As setas vivem na tabela de temas (que antes as usava para rolar na
+  horizontal); as letras são atalhos da aba e, com o foco na pesquisa, viram
+  texto. `Alt+H`/`Alt+L` continuam sendo troca de aba.
+- Nada é aplicado no sistema. A exceção é a prévia ao vivo ligada: aí o fundo
+  da área de trabalho acompanha o exibido, e a restauração do tema e do fundo
+  originais continua valendo.
+- A tecla `p` e o botão viraram "Lista de fundos": o mesmo diálogo de antes,
+  útil para pular direto a um fundo e a única forma de tirar o padrão.
+- Tema com 0 ou 1 fundo: as teclas só deixam uma frase na linha de estado.

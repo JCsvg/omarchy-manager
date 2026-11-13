@@ -94,6 +94,16 @@ TEXTO_AJUDA = """\
   ?                 esta ajuda
   q                 sair
 
+[b]Aba Temas[/b]
+  h l ou ← →        trocar o fundo exibido; o exibido vira o padrão do tema
+  p                 lista de fundos (e tirar o padrão)
+  v                 prévia ao vivo (aplica de verdade; v ou Esc desfaz)
+  Enter             aplicar o tema com o fundo padrão
+
+[b]Outras teclas[/b]
+  Alt+H / Alt+L     aba anterior / próxima (de qualquer lugar)
+  4                 aba Config, com todos os atalhos
+
 [b]Mouse[/b]
   clique            selecionar ou ativar
   passar o mouse    mostrar descrição

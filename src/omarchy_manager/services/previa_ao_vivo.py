@@ -33,6 +33,7 @@ class PreviaAoVivo:
         self._trava = threading.RLock()
         self._original: dict | None = None
         self.aplicado: str | None = None
+        self.fundo_aplicado: str | None = None
 
     @property
     def arquivo(self) -> Path:
@@ -82,8 +83,19 @@ class PreviaAoVivo:
             if not r.ok:
                 return False, f"Falha na prévia de {slug}: {r.erro_legivel}"
             self.aplicado = slug
+            self.fundo_aplicado = None  # o Omarchy escolheu um fundo ao trocar o tema
             logger.info("prévia ao vivo: %s (original %s)", slug, self._original["tema"])
             return True, ""
+
+    def definir_fundo(self, imagem: Path) -> bool:
+        """Durante uma prévia, troca o fundo da área de trabalho. Fora dela, não faz nada."""
+        with self._trava:
+            if self._original is None or str(imagem) == self.fundo_aplicado or not Path(imagem).is_file():
+                return False
+            if not self.omarchy.theme_bg_set(Path(imagem)).ok:
+                return False
+            self.fundo_aplicado = str(imagem)
+            return True
 
     def restaurar(self) -> bool:
         """Volta ao tema e ao fundo originais. Idempotente. True se restaurou algo."""
@@ -101,6 +113,7 @@ class PreviaAoVivo:
                 self.arquivo.unlink(missing_ok=True)
                 self._original = None
                 self.aplicado = None
+                self.fundo_aplicado = None
                 logger.info("prévia ao vivo: restaurado %s", tema)
             else:
                 logger.error("prévia ao vivo: falha ao restaurar %s; estado mantido em %s", tema, self.arquivo)
@@ -112,6 +125,7 @@ class PreviaAoVivo:
             self.arquivo.unlink(missing_ok=True)
             self._original = None
             self.aplicado = None
+            self.fundo_aplicado = None
 
     def instalar_rede_de_seguranca(self) -> None:
         atexit.register(self.restaurar)

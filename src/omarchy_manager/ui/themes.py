@@ -3,6 +3,7 @@ miniatura do fundo, imagem padrão por tema e aplicação com confirmação."""
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from textual import on, work
@@ -169,6 +170,23 @@ class CriarTemaIA(ModalScreen["tuple[IADisponivel, str, Tema | None] | None"]):
         self.dismiss(None)
 
 
+class TabelaTemas(DataTable):
+    """Na lista de temas, esquerda e direita trocam o fundo exibido em vez de rolar a tabela."""
+
+    def _aba(self) -> "AbaTemas | None":
+        return next((a for a in self.ancestors if isinstance(a, AbaTemas)), None)
+
+    def action_cursor_left(self) -> None:
+        aba = self._aba()
+        if aba is not None:
+            aba.action_fundo_relativo(-1)
+
+    def action_cursor_right(self) -> None:
+        aba = self._aba()
+        if aba is not None:
+            aba.action_fundo_relativo(1)
+
+
 class AbaTemas(Vertical):
     DEFAULT_CSS = """
     AbaTemas { height: 1fr; }
@@ -197,7 +215,9 @@ class AbaTemas(Vertical):
         Binding("j", "cursor_baixo", "Descer na lista", show=False),
         Binding("k", "cursor_cima", "Subir na lista", show=False),
         Binding("enter", "aplicar", "Aplicar o tema selecionado", show=False),
-        Binding("p", "fundo_padrao", "Imagem padrão"),
+        Binding("h,left", "fundo_relativo(-1)", "Fundo anterior", key_display="h/←"),
+        Binding("l,right", "fundo_relativo(1)", "Próximo fundo (vira o padrão)", key_display="l/→"),
+        Binding("p", "fundo_padrao", "Lista de fundos"),
         Binding("v", "alternar_previa", "Prévia ao vivo"),
         Binding("escape", "limpar_busca", "Desligar a prévia ao vivo e limpar a pesquisa", show=False),
     ]
@@ -214,12 +234,15 @@ class AbaTemas(Vertical):
         self._sondando = False
         self._timer_previa = None
         self._timer_resize = None
+        self._fundo_exibido: dict[str, Path] = {}  # escolha feita com h/l nesta sessão
+        self._padrao_pendente: tuple[str, Path] | None = None
+        self._timer_padrao = None
 
     def compose(self) -> ComposeResult:
         with Horizontal(id="temas-topo"):
             yield Input(placeholder="Pesquisar tema por nome  (/)", id="temas-busca")
         with Horizontal(id="temas-corpo"):
-            tabela = DataTable(id="temas-tabela", cursor_type="row", zebra_stripes=True)
+            tabela = TabelaTemas(id="temas-tabela", cursor_type="row", zebra_stripes=True)
             tabela.add_columns(" ", "Tema", "Origem", "Modo")
             yield tabela
             with VerticalScroll(id="temas-previa"):
@@ -238,7 +261,7 @@ class AbaTemas(Vertical):
                     yield Label("", id="previa-motivo")
         with Horizontal(id="temas-acoes"):
             yield Button("Aplicar", id="btn-aplicar", variant="primary")
-            yield Button("Imagem padrão", id="btn-fundo")
+            yield Button("Lista de fundos", id="btn-fundo")
             yield Button("Criar tema com IA", id="btn-ia")
             yield Button("Compartilhar", id="btn-compartilhar-tema")
             yield Button("Receber", id="btn-receber")
@@ -328,6 +351,7 @@ class AbaTemas(Vertical):
 
     @on(DataTable.RowHighlighted, "#temas-tabela")
     def _linha_mudou(self) -> None:
+        self.gravar_padrao_pendente()  # o padrão do tema que ficou para trás não pode se perder
         self._atualizar_previa()
         if self._previa_ligada or self._ctrl:
             self._agendar_previa()
@@ -385,16 +409,21 @@ class AbaTemas(Vertical):
         alvo = self._tema_desejado()
         if alvo is None and not self.app.previa.ativa:
             return
-        self._executar_previa(alvo.slug if alvo else None)
+        fundo = None
+        if alvo is not None and (alvo.slug in self._fundo_exibido or alvo.fundo_padrao):
+            fundo = self._imagem_para_previa(alvo)
+        self._executar_previa(alvo.slug if alvo else None, fundo)
 
     @work(thread=True, group="temas-previa-viva")
-    def _executar_previa(self, slug: str | None) -> None:
+    def _executar_previa(self, slug: str | None, fundo: Path | None = None) -> None:
         previa = self.app.previa
         if slug is None:
             previa.restaurar()
             mensagem = ""
         else:
-            _, mensagem = previa.iniciar(slug)
+            ok, mensagem = previa.iniciar(slug)
+            if ok and fundo is not None:
+                previa.definir_fundo(fundo)
         self.app.call_from_thread(self._previa_viva_feita, mensagem)
 
     def _previa_viva_feita(self, mensagem: str) -> None:
@@ -497,8 +526,17 @@ class AbaTemas(Vertical):
             foto.mostrar(None)
             motivo.update("")
             return
-        padrao = " [b](padrão)[/b]" if t.fundo_padrao and imagem == t.fundo_padrao else ""
-        info.update(f"{imagem.name}{padrao}\n[dim]{imagem}[/dim]\n{len(t.fundos)} fundo(s) disponíveis")
+        posicao = self._indice_do_fundo(t, imagem)
+        pendente = self._padrao_pendente is not None and self._padrao_pendente[0] == t.slug
+        if pendente:
+            marca = "  [b]● padrão[/b] [dim](gravando…)[/dim]"
+        elif self._indice_do_fundo(t, t.fundo_padrao) == posicao and posicao >= 0:
+            marca = "  [b]● padrão[/b]"
+        else:
+            marca = "  [dim]sem padrão definido[/dim]"
+        conta = f"{posicao + 1} de {len(t.fundos)}" if posicao >= 0 else f"{len(t.fundos)} fundo(s)"
+        dica = "h/l ou ← → trocam o fundo, e o exibido vira o padrão" if len(t.fundos) > 1 else "único fundo deste tema"
+        info.update(f"{imagem.name}  [b]{conta}[/b]{marca}\n[dim]{imagem}[/dim]\n[dim]{dica}[/dim]")
         if em_pixels:
             motivo.update("")
             foto.mostrar(imagem)
@@ -518,7 +556,88 @@ class AbaTemas(Vertical):
             fundo.update("[dim]gerando prévia…[/dim]")
             self._gerar_previa(imagem, colunas, linhas)
 
+    # Troca do fundo exibido com h/l e setas. O fundo exibido vira o padrão do tema.
+
+    DEBOUNCE_PADRAO = 0.6
+
+    def _indice_do_fundo(self, t: Tema, imagem: Path | None) -> int:
+        if imagem is None:
+            return -1
+        try:
+            alvo = imagem.resolve()
+        except OSError:
+            alvo = imagem
+        for i, f in enumerate(t.fundos):
+            try:
+                if f.resolve() == alvo:
+                    return i
+            except OSError:
+                continue
+        return -1
+
+    def action_fundo_relativo(self, passo: int) -> None:
+        t = self.tema_selecionado()
+        if t is None:
+            return
+        if len(t.fundos) < 2:
+            self._status("Este tema não tem outro fundo para trocar." if t.fundos else "Este tema não tem fundos.")
+            return
+        atual = self._indice_do_fundo(t, self._imagem_para_previa(t))
+        novo = t.fundos[(max(atual, 0) + passo) % len(t.fundos)] if atual >= 0 else t.fundos[0]
+        self._fundo_exibido[t.slug] = novo
+        self._padrao_pendente = (t.slug, novo)
+        if self._timer_padrao is not None:
+            self._timer_padrao.stop()
+        self._timer_padrao = self.set_timer(self.DEBOUNCE_PADRAO, self._assentou)
+        self._atualizar_previa()
+
+    def _assentou(self) -> None:
+        self._timer_padrao = None
+        self.gravar_padrao_pendente()
+        # Com a prévia ao vivo ligada, o fundo da área de trabalho acompanha o exibido.
+        t = self.tema_selecionado()
+        if t is not None and self.app.previa.ativa and self.app.previa.aplicado == t.slug:
+            self._executar_previa(t.slug, self._imagem_para_previa(t))
+
+    def gravar_padrao_pendente(self) -> None:
+        """Grava em config.toml o padrão escolhido com h/l. Chamado ao assentar, ao mudar
+        de tema, ao trocar de aba e ao sair."""
+        if self._timer_padrao is not None:
+            self._timer_padrao.stop()
+            self._timer_padrao = None
+        pendente, self._padrao_pendente = self._padrao_pendente, None
+        if pendente is None:
+            return
+        slug, imagem = pendente
+        tema = next((x for x in self.temas if x.slug == slug), None)
+        if tema is None:
+            return
+        try:
+            gravada = self.app.temas.definir_fundo_padrao(tema, imagem)
+        except (ValueError, OSError) as exc:
+            self.app.notify(f"Não foi possível guardar a imagem padrão de {tema.nome}: {exc}", severity="error", timeout=8)
+            self._fundo_exibido.pop(slug, None)
+            return
+        novo = replace(tema, fundo_padrao=gravada)
+        self.temas = [novo if x.slug == slug else x for x in self.temas]
+        if slug in self._por_linha:
+            self._por_linha[slug] = novo
+        self._fundo_exibido.pop(slug, None)
+        if self.is_attached:
+            sel = self.tema_selecionado()
+            if sel is not None and sel.slug == slug:
+                self._atualizar_previa()
+
+    def on_unmount(self) -> None:
+        try:
+            self.gravar_padrao_pendente()
+        except Exception:
+            pass
+
     def _imagem_para_previa(self, t: Tema) -> Path | None:
+        exibido = self._fundo_exibido.get(t.slug)
+        if exibido is not None and exibido.is_file():
+            return exibido
         if t.fundo_padrao and t.fundo_padrao.is_file():
             return t.fundo_padrao
         return t.fundos[0] if t.fundos else None
@@ -578,8 +697,11 @@ class AbaTemas(Vertical):
             except (ValueError, OSError) as exc:
                 self.app.push_screen(Aviso("Imagem recusada", str(exc)))
                 return
+            self._fundo_exibido.pop(t.slug, None)
             self.recarregar()
 
+        self.gravar_padrao_pendente()
+        t = next((x for x in self.temas if x.slug == t.slug), t)
         self.app.push_screen(EscolherFundo(t), depois)
 
     @on(Button.Pressed, "#btn-compartilhar-tema")

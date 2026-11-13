@@ -4,7 +4,7 @@ Gerenciador em modo texto (TUI) para o Omarchy: atalhos do Hyprland, plugins
 do Omarchy Shell e temas, em um único lugar, com teclado e mouse, em
 português do Brasil e nas cores do tema ativo.
 
-Versão 0.3.0. Feito para Omarchy com Hyprland em configuração Lua (testado
+Versão 0.4.0. Feito para Omarchy com Hyprland em configuração Lua (testado
 com Omarchy 4.5 e Hyprland 0.56.2).
 
 ## Instalar (como plugin do Omarchy)
@@ -100,8 +100,12 @@ Sem tradução, aparece o texto original do plugin.
 Lista os temas, com paleta, exemplo de terminal e a imagem de fundo ao
 lado. Em terminal que desenha imagens (Sixel no Foot; protocolo kitty no
 kitty e no Ghostty) ela aparece em pixels de verdade; nos outros, ou em
-janela estreita, em blocos coloridos, com uma linha dizendo o motivo. `p`
-escolhe a imagem padrão do tema. `Enter` aplica o tema e a imagem padrão,
+janela estreita, em blocos coloridos, com uma linha dizendo o motivo. `h`/`l` ou as
+setas esquerda e direita percorrem os fundos do tema em foco, e o fundo que
+estiver exibido passa a ser o padrão daquele tema, sem passo extra (a
+prévia mostra a posição, como "2 de 5"). Isso só guarda a escolha; nada
+muda na área de trabalho, a não ser com a prévia ao vivo ligada. `p` abre a
+lista de fundos, que também serve para tirar o padrão. `Enter` aplica o tema e a imagem padrão,
 depois de confirmar.
 
 Prévia ao vivo: `v` liga. Com ela ligada, o tema em foco na lista é aplicado
