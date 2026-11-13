@@ -4,7 +4,7 @@ Gerenciador em modo texto (TUI) para o Omarchy: atalhos do Hyprland, plugins
 do Omarchy Shell e temas, em um único lugar, com teclado e mouse, em
 português do Brasil e nas cores do tema ativo.
 
-Versão 0.4.0. Feito para Omarchy com Hyprland em configuração Lua (testado
+Versão 0.5.0. Feito para Omarchy com Hyprland em configuração Lua (testado
 com Omarchy 4.5 e Hyprland 0.56.2).
 
 ## Instalar (como plugin do Omarchy)
@@ -65,7 +65,9 @@ o compartilhamento na rede local.
 | `?` | ajuda |
 | `q` | sair |
 
-O mouse seleciona linhas, aperta botões e troca de aba. A aba Config lista
+Nos diálogos, `←`/`→` ou `h`/`l` movem entre os botões, `↑`/`↓` ou `j`/`k`
+entre os campos, `Enter` ativa o botão em foco (o de cor cheia) e `Esc`
+cancela. O mouse seleciona linhas, aperta botões e troca de aba. A aba Config lista
 todos os atalhos do programa e os caminhos dos arquivos que ele usa.
 
 ### Aba Atalhos

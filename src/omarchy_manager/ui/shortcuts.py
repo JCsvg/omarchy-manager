@@ -48,6 +48,7 @@ class CapturaTecla(ModalScreen[Combinacao | None]):
             yield Static(f"Atual: {self.atalho.combinacao}\n\nPressione a nova combinação. Esc cancela.", id="instrucao")
             yield Static("…", id="capturada")
             yield Static("", id="captura-status", classes="mudo")
+            yield Static("Qualquer combinação vira o novo atalho · Esc cancelar", classes="dica-teclas")
             with Horizontal(id="botoes"):
                 yield Button("Cancelar", id="cancelar")
 

@@ -24,6 +24,9 @@ FIXOS = [
     ("Plugins", "Mouse sobre o nome", "Mostrar a descrição do plugin"),
     ("Temas", "Segurar Ctrl", "Prévia ao vivo do tema em foco ou sob o mouse; soltar volta ao anterior"),
     ("Atalhos (captura)", "Qualquer combinação", "Vira a nova combinação do atalho em edição"),
+    ("Diálogos", "← / → ou H / L", "Mover o foco entre os botões"),
+    ("Diálogos", "↑ / ↓ ou J / K", "Mover entre os campos, ou escolher na lista"),
+    ("Diálogos", "Enter", "Ativar o botão em foco (o de cor cheia)"),
     ("Diálogos", "Esc", "Cancelar e fechar"),
 ]
 

@@ -24,13 +24,15 @@ from omarchy_manager.services.bundle import (
 )
 from omarchy_manager.services.lan_share import ErroLan, ServidorEnvio, baixar, codigo_de_confirmacao, descobrir, interpretar_convite
 from omarchy_manager.services.qr import qr_markup
-from omarchy_manager.ui.dialogs import CSS_DIALOGO, Aviso
+from omarchy_manager.ui.dialogs import CSS_DIALOGO, DICA_FORMULARIO, Aviso, Dialogo
 
 RECEBIDOS_DIR = caminhos.DATA_DIR / "recebidos"
 EXPORT_DIR = Path.home() / "Downloads"
 
 
-class Compartilhar(ModalScreen[None]):
+class Compartilhar(Dialogo):
+    FOCO_INICIAL = "#cancelar"
+
     """Revisão (licença, arquivos, tamanho) -> enviar na LAN ou guardar como arquivo."""
 
     DEFAULT_CSS = CSS_DIALOGO + """
@@ -137,7 +139,9 @@ class Compartilhar(ModalScreen[None]):
         self.dismiss(None)
 
 
-class Receber(ModalScreen[Path | None]):
+class Receber(Dialogo):
+    DICA = DICA_FORMULARIO
+
     """Cole o convite (ou escolha um par descoberto), confira o código, baixe, revise e instale desligado."""
 
     DEFAULT_CSS = CSS_DIALOGO + """
@@ -168,6 +172,7 @@ class Receber(ModalScreen[Path | None]):
                 yield Button("Instalar desligado", id="instalar", disabled=True)
 
     def on_mount(self) -> None:
+        super().on_mount()
         self.query_one("#convite", Input).focus()
 
     @on(Button.Pressed, "#procurar")

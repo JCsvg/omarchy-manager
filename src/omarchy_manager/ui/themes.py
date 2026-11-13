@@ -24,7 +24,7 @@ from omarchy_manager.services import terminal_grafico
 from omarchy_manager.services.previa_ao_vivo import ctrl_pressionado
 from omarchy_manager.services.temas import ResultadoAplicacao, nome_de_slug
 from omarchy_manager.services.theme_preview import blocos_de_imagem
-from omarchy_manager.ui.dialogs import CSS_DIALOGO, Aviso, Confirmacao
+from omarchy_manager.ui.dialogs import CSS_DIALOGO, DICA_FORMULARIO, DICA_LISTA, Aviso, Confirmacao, Dialogo
 from omarchy_manager.ui.imagem import ImagemTerminal
 
 SEM_PADRAO = "__sem_padrao__"
@@ -56,7 +56,9 @@ def amostra_terminal(p: Paleta) -> str:
     )
 
 
-class EscolherFundo(ModalScreen[str | None]):
+class EscolherFundo(Dialogo):
+    DICA = DICA_LISTA
+
     """Lista os fundos permitidos do tema. Devolve o caminho, SEM_PADRAO ou None."""
 
     DEFAULT_CSS = CSS_DIALOGO + """
@@ -84,6 +86,7 @@ class EscolherFundo(ModalScreen[str | None]):
                 yield Button("Cancelar", id="cancelar")
 
     def on_mount(self) -> None:
+        super().on_mount()
         self.query_one(OptionList).focus()
 
     @on(OptionList.OptionSelected)
@@ -97,7 +100,9 @@ class EscolherFundo(ModalScreen[str | None]):
         self.dismiss(None)
 
 
-class CriarTemaIA(ModalScreen["tuple[IADisponivel, str, Tema | None] | None"]):
+class CriarTemaIA(Dialogo):
+    DICA = DICA_FORMULARIO
+
     """IA instalada, nome do tema, tema base e diretório de trabalho."""
 
     DEFAULT_CSS = CSS_DIALOGO + """
@@ -132,6 +137,7 @@ class CriarTemaIA(ModalScreen["tuple[IADisponivel, str, Tema | None] | None"]):
                 yield Button("Abrir chat", id="ok", variant="primary")
 
     def on_mount(self) -> None:
+        super().on_mount()
         self.query_one("#ia-nome", Input).focus()
         self._atualizar_workspace("")
 

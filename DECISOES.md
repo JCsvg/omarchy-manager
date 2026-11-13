@@ -443,3 +443,17 @@ lista de fundos, sair e desmontar a aba.
 - A tecla `p` e o botão viraram "Lista de fundos": o mesmo diálogo de antes,
   útil para pular direto a um fundo e a única forma de tirar o padrão.
 - Tema com 0 ou 1 fundo: as teclas só deixam uma frase na linha de estado.
+
+## 13. Navegação nos diálogos (versão 0.5.0)
+
+Todos os diálogos herdam de `Dialogo` (`ui/dialogs.py`): esquerda/direita e
+`h`/`l` andam entre os botões habilitados, em ciclo; cima/baixo e `j`/`k`
+andam entre os controles ou navegam a lista em foco; com o foco em um campo
+de texto, as letras e as setas horizontais são do campo, e cima/baixo saem
+dele. Cada diálogo ganha uma linha de rodapé com as teclas. A captura de
+atalho fica de fora da base de propósito, porque ali toda tecla é a resposta.
+
+Destaque do foco: o botão "primário" era pintado de cor cheia mesmo sem foco
+e parecia ser o selecionado. Agora só o botão em foco tem cor cheia (a de
+destaque, ou a de erro em ação destrutiva); os outros ficam neutros. O foco
+inicial de toda confirmação é `Cancelar`.
