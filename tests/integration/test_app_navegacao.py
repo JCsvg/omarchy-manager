@@ -58,14 +58,19 @@ async def test_alt_troca_de_aba_de_qualquer_foco(app):
         abas = app.query_one(TabbedContent)
         assert abas.active == "plugins"
         await pilot.press("alt+l")
+        await pilot.pause()
         assert abas.active == "temas"
         await pilot.press("alt+right")
+        await pilot.pause()
         assert abas.active == "config"
         await pilot.press("alt+l")
+        await pilot.pause()
         assert abas.active == "atalhos"  # dá a volta
         await pilot.press("alt+h")
+        await pilot.pause()
         assert abas.active == "config"
         await pilot.press("alt+left", "alt+left")
+        await pilot.pause()
         assert abas.active == "plugins"
 
         # o caso que prendia: foco no campo de pesquisa. Dígito vira texto, Alt troca.
@@ -80,6 +85,7 @@ async def test_alt_troca_de_aba_de_qualquer_foco(app):
         await pilot.pause()
         assert abas.active == "temas"
         await pilot.press("4")
+        await pilot.pause()
         assert abas.active == "config"
         assert app.query_one("#config-tabela", DataTable).row_count >= 20
 

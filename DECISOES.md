@@ -365,3 +365,63 @@ Histórico refeito antes do primeiro push, com o e-mail
 `noreply` do GitHub no autor, para não expor e-mail pessoal em repositório
 público. Nome de pessoa em `LICENSE`, `pyproject.toml` e `PKGBUILD` trocado
 pelo usuário do GitHub.
+
+## 11. Imagem do fundo em pixels (versão 0.3.0)
+
+Por que saía em blocos: era decisão da Fase 0 (seção 3). A aba Temas sempre
+desenhava a miniatura em meio bloco, em qualquer terminal, por receio de o
+Textual corromper um Sixel sobreposto. Não era falha de detecção: não havia
+detecção. Os terminais em uso na máquina de desenvolvimento são Foot (que
+desenha Sixel) e Herdr rodando dentro de um Foot.
+
+Biblioteca: `textual-image` 0.14.4 foi avaliada. Faz o que é preciso (Sixel
+e protocolo kitty dentro do Textual), mas não está nos repositórios oficiais
+do Arch (só no AUR), exige `pillow` e é LGPL-3, o que complica copiar para
+dentro de um projeto MIT. Decisão: não depender dela. O widget
+`ui/imagem.py` usa a mesma técnica (linhas em branco para o Textual e a
+imagem pendurada como segmento de controle na última linha, de modo que é o
+compositor que decide quando redesenhar), em cerca de 150 linhas, e a
+codificação fica com o ImageMagick, que já era dependência opcional. Assim o
+pacote pacman e o venv do lançador funcionam sem nada novo.
+
+Detecção: uma consulta ao terminal antes de o Textual assumir a entrada, com
+APC de consulta do protocolo kitty, `CSI 16 t` (tamanho da célula) e `CSI c`
+(atributos primários, onde o 4 indica Sixel e que também serve de
+sentinela). Resultado em cache. O tamanho da célula é relido por `TIOCGWINSZ`
+a cada desenho, porque muda com o zoom da fonte. O nome do terminal só entra
+na frase que explica os blocos. `OMARCHY_MANAGER_IMAGEM=blocos|sixel|kitty`
+força um modo.
+
+Desempenho: decodificar um papel de parede grande leva de 1 a 2,6 s. Cada
+arquivo é reduzido uma vez para um JPEG de até 1600 px em
+`~/.cache/omarchy-manager/miniaturas/` e daí o Sixel sai em cerca de 0,3 s.
+Tudo em thread, com cache em memória por (arquivo, tamanho do widget, tamanho
+da célula) e descarte do pedido se o usuário já foi para outro tema.
+
+Regras de desenho: a imagem só é emitida se o widget está inteiro na tela, a
+tela está ativa (sem diálogo por cima) e a imagem foi gerada para o tamanho
+atual. Em janela estreita (abaixo de 125 colunas) o painel rola, então ali
+valem os blocos. A imagem kitty é apagada explicitamente ao trocar de aba,
+abrir diálogo, esconder ou desmontar o widget; o Sixel some sozinho quando o
+Textual repinta as células.
+
+Blocos: quando há `chafa`, usa símbolos de bloco, meio bloco e quadrante
+(o dobro da resolução horizontal do meio bloco); sem ele, o meio bloco
+próprio. Uma linha abaixo da imagem diz por que ela está em blocos.
+
+Achado no caminho: o `chafa` consulta o terminal de controle por conta
+própria e, chamado de dentro da TUI, disputava a entrada do teclado (o `q`
+deixava de sair). Corrigido com `--probe off` e com `stdin` fechado em todo
+subprocesso.
+
+O que foi visto e o que não foi:
+
+- visto em captura de tela de um Foot real: a imagem do fundo em pixels no
+  painel direito (Sixel) e, em janela estreita, os blocos do chafa;
+- confirmado só pelas sequências emitidas, em um pseudoterminal que responde
+  às consultas: posição e tamanho do Sixel, ausência de imagem ao trocar de
+  aba e com diálogo aberto, redesenho ao voltar, e todo o caminho do
+  protocolo kitty (transmissão, apagar ao sair da aba e ao abrir diálogo);
+- não verificado: protocolo kitty em um kitty ou Ghostty de verdade (nenhum
+  dos dois está instalado), o comportamento dentro do Herdr e do tmux (a
+  detecção decide pelo que eles responderem), e rolagem com imagem.

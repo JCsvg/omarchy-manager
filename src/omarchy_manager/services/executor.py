@@ -64,6 +64,7 @@ def executar(
         proc = subprocess.run(
             lista,
             input=entrada,
+            stdin=None if entrada is not None else subprocess.DEVNULL,  # nunca disputa o teclado com a TUI
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -85,7 +86,7 @@ def executar_binario(args: Sequence[str], *, timeout: float = TEMPO_PADRAO) -> t
     """Como `executar`, mas devolve stdout em bytes (imagens, Sixel)."""
     lista = _validar(args)
     try:
-        proc = subprocess.run(lista, capture_output=True, timeout=timeout, check=False)
+        proc = subprocess.run(lista, capture_output=True, stdin=subprocess.DEVNULL, timeout=timeout, check=False)
     except FileNotFoundError as exc:
         raise ComandoAusente(f"comando não encontrado: {lista[0]}") from exc
     except subprocess.TimeoutExpired:

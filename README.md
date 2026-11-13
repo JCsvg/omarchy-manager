@@ -4,7 +4,7 @@ Gerenciador em modo texto (TUI) para o Omarchy: atalhos do Hyprland, plugins
 do Omarchy Shell e temas, em um único lugar, com teclado e mouse, em
 português do Brasil e nas cores do tema ativo.
 
-Versão 0.2.0. Feito para Omarchy com Hyprland em configuração Lua (testado
+Versão 0.3.0. Feito para Omarchy com Hyprland em configuração Lua (testado
 com Omarchy 4.5 e Hyprland 0.56.2).
 
 ## Instalar (como plugin do Omarchy)
@@ -46,7 +46,8 @@ de `~/.config/hypr/bindings.lua` e o `omarchy-manager-bindings.lua`, e o
 Hyprland volta aos atalhos originais no próximo reload.
 
 Requisitos que já vêm com o Omarchy: `lua`, `hyprctl`, `omarchy`. Opcionais:
-ImageMagick (`magick`) para a miniatura dos fundos, `openssl` e `avahi` para
+ImageMagick (`magick`) para a imagem dos fundos, `chafa` para blocos mais
+nítidos em terminal sem gráficos, `openssl` e `avahi` para
 o compartilhamento na rede local.
 
 ## Usar
@@ -96,8 +97,10 @@ Sem tradução, aparece o texto original do plugin.
 
 ### Aba Temas
 
-Lista os temas, com paleta, exemplo de terminal e a imagem de fundo em
-tamanho grande ao lado (em terminal estreito, ela vai para baixo). `p`
+Lista os temas, com paleta, exemplo de terminal e a imagem de fundo ao
+lado. Em terminal que desenha imagens (Sixel no Foot; protocolo kitty no
+kitty e no Ghostty) ela aparece em pixels de verdade; nos outros, ou em
+janela estreita, em blocos coloridos, com uma linha dizendo o motivo. `p`
 escolhe a imagem padrão do tema. `Enter` aplica o tema e a imagem padrão,
 depois de confirmar.
 

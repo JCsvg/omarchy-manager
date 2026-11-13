@@ -6,7 +6,7 @@
 # nada vem do AUR e nada é vendorizado. Ver DECISOES.md, seção 8.
 
 pkgname=omarchy-manager
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="Gerenciador TUI de atalhos, plugins e temas do Omarchy"
 arch=('any')
@@ -21,8 +21,8 @@ depends=(
   'hyprland'  # hyprctl
 )
 optdepends=(
-  'imagemagick: prévia de fundos na aba Temas'
-  'chafa: prévia Sixel alternativa'
+  'imagemagick: imagem do fundo na aba Temas (Sixel, kitty e blocos)'
+  'chafa: blocos mais densos quando o terminal não desenha imagens'
   'xdg-terminal-exec: abrir o chat da IA no terminal padrão'
 )
 makedepends=('python-build' 'python-installer' 'python-wheel' 'python-hatchling')

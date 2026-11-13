@@ -16,10 +16,15 @@ from textual.widgets.option_list import Option
 
 from omarchy_manager.models import Paleta, Tema
 from omarchy_manager.services.ai_launcher import IADisponivel
+from rich.text import Text
+
+from omarchy_manager.services import imagem as gerador_imagem
+from omarchy_manager.services import terminal_grafico
 from omarchy_manager.services.previa_ao_vivo import ctrl_pressionado
 from omarchy_manager.services.temas import ResultadoAplicacao, nome_de_slug
 from omarchy_manager.services.theme_preview import blocos_de_imagem
 from omarchy_manager.ui.dialogs import CSS_DIALOGO, Aviso, Confirmacao
+from omarchy_manager.ui.imagem import ImagemTerminal
 
 SEM_PADRAO = "__sem_padrao__"
 TEXTO_PREVIA_DESLIGADA = "Prévia ao vivo desligada. v liga (aplica de verdade o tema em foco); segurar Ctrl faz o mesmo enquanto estiver pressionado."
@@ -175,6 +180,8 @@ class AbaTemas(Vertical):
     #previa-info { width: 54; height: 1fr; padding: 0 1; }
     #previa-imagem { width: 1fr; height: 1fr; padding: 0 1; border-left: solid $panel; }
     #previa-imagem-titulo { color: $accent; text-style: bold; height: 1; }
+    #previa-foto { height: 1fr; }
+    #previa-motivo { height: auto; color: $text-muted; text-style: dim; }
     AbaTemas.estreito #temas-previa { layout: vertical; overflow-y: auto; }
     AbaTemas.estreito #previa-info { width: 1fr; height: auto; }
     AbaTemas.estreito #previa-imagem { width: 1fr; height: auto; border-left: none; }
@@ -200,7 +207,7 @@ class AbaTemas(Vertical):
         self.temas: list[Tema] = []
         self._por_linha: dict[str, Tema] = {}
         self._filtro = ""
-        self._cache_blocos: dict[tuple[str, int, int], list[str] | None] = {}
+        self._cache_blocos: dict[tuple[str, int, int], object] = {}
         self._previa_ligada = False  # alternada com `v`
         self._ctrl = False  # Ctrl segurado, visto pelo Hyprland
         self._sondar = True
@@ -226,7 +233,9 @@ class AbaTemas(Vertical):
                     yield Static("", id="previa-fundo-info")
                 with Vertical(id="previa-imagem"):
                     yield Static("Fundo do tema", id="previa-imagem-titulo")
+                    yield ImagemTerminal(id="previa-foto")
                     yield Static("", id="previa-fundo")
+                    yield Label("", id="previa-motivo")
         with Horizontal(id="temas-acoes"):
             yield Button("Aplicar", id="btn-aplicar", variant="primary")
             yield Button("Imagem padrão", id="btn-fundo")
@@ -245,6 +254,8 @@ class AbaTemas(Vertical):
 
     def on_resize(self) -> None:
         self.set_class(self.size.width < self.LARGURA_DUAS_COLUNAS, "estreito")
+        if self.has_class("estreito"):  # some já, antes de a imagem ser emitida em um espaço que mudou
+            self.query_one("#previa-foto").display = False
         if self._timer_resize is not None:
             self._timer_resize.stop()
         self._timer_resize = self.set_timer(0.3, self._atualizar_previa)
@@ -256,7 +267,7 @@ class AbaTemas(Vertical):
             linhas = 10**6
         else:
             caixa = self.query_one("#previa-imagem").size
-            colunas, linhas = caixa.width - 2, caixa.height - 1
+            colunas, linhas = caixa.width - 2, caixa.height - 3
         if colunas < 16 or linhas < 4:
             return 48, 10
         linhas = max(4, min(linhas, colunas * 9 // 32))
@@ -475,17 +486,34 @@ class AbaTemas(Vertical):
             pal.update(f"modo {modo}\n" + amostra_paleta(t.paleta))
             term.update(amostra_terminal(t.paleta))
         imagem = self._imagem_para_previa(t)
+        foto = self.query_one("#previa-foto", ImagemTerminal)
+        motivo = self.query_one("#previa-motivo", Label)
+        em_pixels = self._imagem_em_pixels() and not foto.falhou
+        foto.display = em_pixels
+        fundo.display = not em_pixels
         if imagem is None:
             info.update("Este tema não tem fundos.")
             fundo.update("")
+            foto.mostrar(None)
+            motivo.update("")
             return
         padrao = " [b](padrão)[/b]" if t.fundo_padrao and imagem == t.fundo_padrao else ""
         info.update(f"{imagem.name}{padrao}\n[dim]{imagem}[/dim]\n{len(t.fundos)} fundo(s) disponíveis")
+        if em_pixels:
+            motivo.update("")
+            foto.mostrar(imagem)
+            return
+        if self.has_class("estreito") and terminal_grafico.protocolo():
+            motivo.update("Imagem em blocos: janela estreita. Alargue o terminal para ver em pixels.")
+        elif foto.falhou:
+            motivo.update("Imagem em blocos: a conversão para o formato do terminal falhou (ImageMagick).")
+        else:
+            motivo.update(terminal_grafico.motivo_blocos())
         colunas, linhas = self._tamanho_miniatura()
         chave = (str(imagem), colunas, linhas)
         if chave in self._cache_blocos:
             blocos = self._cache_blocos[chave]
-            fundo.update("\n".join(blocos) if blocos else "[dim]prévia indisponível (ImageMagick ausente ou falhou)[/dim]")
+            fundo.update(blocos if blocos else "[dim]prévia indisponível (ImageMagick ausente ou falhou)[/dim]")
         else:
             fundo.update("[dim]gerando prévia…[/dim]")
             self._gerar_previa(imagem, colunas, linhas)
@@ -497,17 +525,26 @@ class AbaTemas(Vertical):
 
     @work(thread=True, group="temas-previa")
     def _gerar_previa(self, imagem: Path, colunas: int, linhas: int) -> None:
-        blocos = blocos_de_imagem(imagem, largura=colunas, altura_linhas=linhas)
+        origem = gerador_imagem.intermediario(imagem) or imagem
+        ansi = gerador_imagem.blocos_chafa(origem, colunas, linhas)
+        if ansi is not None:
+            blocos = Text.from_ansi(ansi)
+        else:
+            lista = blocos_de_imagem(origem, largura=colunas, altura_linhas=linhas)
+            blocos = "\n".join(lista) if lista else None
         self.app.call_from_thread(self._previa_pronta, imagem, colunas, linhas, blocos)
 
-    def _previa_pronta(self, imagem: Path, colunas: int, linhas: int, blocos: list[str] | None) -> None:
+    def _imagem_em_pixels(self) -> bool:
+        return terminal_grafico.protocolo() is not None and not self.has_class("estreito")
+
+    def _previa_pronta(self, imagem: Path, colunas: int, linhas: int, blocos) -> None:
         if len(self._cache_blocos) > 200:
             self._cache_blocos.clear()
         self._cache_blocos[(str(imagem), colunas, linhas)] = blocos
         t = self.tema_selecionado()
         if t is not None and self._imagem_para_previa(t) == imagem and (colunas, linhas) == self._tamanho_miniatura():
             self.query_one("#previa-fundo", Static).update(
-                "\n".join(blocos) if blocos else "[dim]prévia indisponível (ImageMagick ausente ou falhou)[/dim]"
+                blocos if blocos else "[dim]prévia indisponível (ImageMagick ausente ou falhou)[/dim]"
             )
 
     # Ações

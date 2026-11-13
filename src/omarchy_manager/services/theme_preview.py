@@ -83,7 +83,7 @@ def sixel_de_imagem(imagem: Path, largura_px: int = 400) -> bytes | None:
     chafa = shutil.which("chafa")
     if chafa:
         try:
-            codigo, saida = executar_binario([chafa, "-f", "sixel", "--size", f"{largura_px // 8}x", str(imagem)], timeout=20)
+            codigo, saida = executar_binario([chafa, "-f", "sixel", "--probe", "off", "--size", f"{largura_px // 8}x", str(imagem)], timeout=20)
         except ComandoAusente:
             codigo, saida = 1, b""
         if codigo == 0 and saida:
