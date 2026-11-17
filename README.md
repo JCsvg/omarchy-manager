@@ -141,9 +141,11 @@ fonte, tamanho, margem interna, cursor, piscar e histórico. Cada gravação faz
 backup em `~/.local/state/omarchy-manager/backups/` e "Desfazer" volta ao
 último. A opacidade vale na hora neste terminal; o resto, em janelas novas.
 
-A seção Prompt aplica um preset **powerline** do Starship (diretório, git,
-.NET, bateria e hora em pílulas), com backup do `starship.toml` e botão para
-restaurar. O Starship valida o preset antes de qualquer troca.
+A seção Prompt liga um prompt **powerline** do Oh My Posh (tema no estilo
+M365Princess: usuário, diretório, git, .NET e hora em segmentos unidos por
+setas). O tema fica em `~/.config/omarchy-manager/` e o `~/.bashrc` ganha só
+um bloco entre marcadores, com backup. O botão de desligar remove o bloco.
+Precisa do binário `oh-my-posh` em `~/.local/bin`.
 
 ### Compartilhar com outro computador da mesma rede
 

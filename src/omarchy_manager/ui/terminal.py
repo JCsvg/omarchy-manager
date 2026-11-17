@@ -7,7 +7,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Button, Input, Label, Select, Static, Switch
 
-from omarchy_manager.services import arquivos, prompt_starship, terminal_cfg
+from omarchy_manager.services import arquivos, prompt_posh, terminal_cfg
 
 
 class CampoNumerico(Input):
@@ -81,14 +81,15 @@ class AbaTerminal(VerticalScroll):
         yield Static("A opacidade vale na hora neste terminal. O resto vale para janelas novas.", classes="dica")
         yield Static("Prompt", classes="secao")
         yield Static(
-            "Powerline: diretório, git, .NET, bateria e hora em pílulas coloridas. "
-            "Reescreve ~/.config/starship.toml, com backup. Precisa de Nerd Font (já vem no Omarchy).",
+            "Powerline (Oh My Posh, tema no estilo M365Princess): usuário, diretório, git, .NET e hora "
+            "em segmentos unidos por setas. Só acrescenta um bloco ao ~/.bashrc, com backup. "
+            "Precisa de Nerd Font (já vem no Omarchy).",
             id="term-prompt-info",
             classes="dica",
         )
         with Horizontal(classes="botoes"):
-            yield Button("Aplicar prompt powerline", id="term-prompt-aplicar", variant="primary")
-            yield Button("Restaurar prompt anterior", id="term-prompt-restaurar")
+            yield Button("Ligar prompt powerline", id="term-prompt-aplicar", variant="primary")
+            yield Button("Desligar prompt powerline", id="term-prompt-restaurar")
         yield Static("", id="term-status")
 
     def on_mount(self) -> None:
@@ -162,10 +163,10 @@ class AbaTerminal(VerticalScroll):
 
     @on(Button.Pressed, "#term-prompt-aplicar")
     def _prompt_aplicar(self) -> None:
-        ok, msg = prompt_starship.aplicar_powerline()
+        ok, msg = prompt_posh.ativar()
         self._status(msg, "ok" if ok else "erro")
 
     @on(Button.Pressed, "#term-prompt-restaurar")
     def _prompt_restaurar(self) -> None:
-        ok, msg = prompt_starship.restaurar()
+        ok, msg = prompt_posh.desativar()
         self._status(msg, "ok" if ok else "aviso")

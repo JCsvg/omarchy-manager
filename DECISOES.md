@@ -493,3 +493,13 @@ mesmo nome por modo, então passou a pedir `refresh_css` explicitamente.
 Sentido inverso (algo opaco já na abertura em tema claro): o teste confere
 que tela, abas e painéis têm todos a cor de fundo do tema, em escuro e em
 claro. Nenhum contêiner com cor própria foi encontrado.
+
+## 15. Prompt do terminal com Oh My Posh
+
+Fato: a opção de prompt da aba Terminal deixou de usar o Starship e passou a
+usar o Oh My Posh (33.0.0, binário em `~/.local/bin/oh-my-posh`), com tema no
+estilo M365Princess guardado em `~/.config/omarchy-manager/`. O app liga e
+desliga um bloco entre marcadores no `~/.bashrc` (`oh-my-posh init bash
+--config ...`), com backup a cada gravação. Operação idempotente e
+reversível. Nada do Omarchy é alterado. Os segmentos usam texto branco ou
+escuro conforme o fundo, sem texto preto sobre cor escura.

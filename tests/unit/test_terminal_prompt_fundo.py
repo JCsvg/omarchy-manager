@@ -1,4 +1,4 @@
-from omarchy_manager.services import arquivos, caminhos, fundo_livre, prompt_starship, terminal_cfg
+from omarchy_manager.services import arquivos, caminhos, fundo_livre, prompt_posh, terminal_cfg
 from omarchy_manager.services.terminal_cfg import ConfigTerminal
 
 FOOT = """[main]
@@ -39,10 +39,26 @@ def test_validar_limita_valores():
     assert (v.opacidade, v.tamanho, v.margem, v.cursor, v.fonte) == (10, 48.0, 0, "block", "abc")
 
 
-def test_preset_powerline_tem_pilulas_e_marca():
-    assert "preset powerline" in prompt_starship.PRESET_POWERLINE[:120]
-    assert prompt_starship.CAP_E in prompt_starship.PRESET_POWERLINE
-    assert "${count}" in prompt_starship.PRESET_POWERLINE
+def test_prompt_posh_liga_desliga_idempotente(tmp_path, monkeypatch):
+    monkeypatch.setattr(caminhos, "BACKUPS_DIR", tmp_path / "bk")
+    monkeypatch.setattr(prompt_posh, "binario", lambda: "/x/oh-my-posh")
+    rc, tema = tmp_path / ".bashrc", tmp_path / "cfg" / "t.omp.json"
+    rc.write_text("alias a=b\n")
+    assert prompt_posh.ativar(rc, tema)[0] and prompt_posh.ativo(rc)
+    um = rc.read_text()
+    assert um.count(prompt_posh.INICIO) == 1 and "alias a=b" in um and str(tema) in um
+    assert prompt_posh.ativar(rc, tema)[0] and rc.read_text() == um
+    assert tema.exists() and "\ue0b0" in tema.read_text()
+    assert prompt_posh.desativar(rc)[0] and not prompt_posh.ativo(rc)
+    assert rc.read_text().strip() == "alias a=b"
+    assert not prompt_posh.desativar(rc)[0]
+    assert (tmp_path / "bk").is_dir()
+
+
+def test_prompt_posh_sem_binario_nao_altera(tmp_path, monkeypatch):
+    monkeypatch.setattr(prompt_posh, "binario", lambda: None)
+    rc = tmp_path / ".bashrc"
+    assert not prompt_posh.ativar(rc, tmp_path / "t.json")[0] and not rc.exists()
 
 
 def test_listar_fundos_inclui_subpastas_ate_3_niveis(tmp_path, monkeypatch):
