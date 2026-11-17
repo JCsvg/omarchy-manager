@@ -24,8 +24,8 @@ VERDE = "#6fcf7f"
 ROXO = "#a56bd6"
 
 
-def _pilula(cor: str, texto: str, fg: str = "#1e1e2e") -> str:
-    return f"[{CAP_E}](fg:{cor})[{texto}](bg:{cor} fg:{fg})[{CAP_D}](fg:{cor}) "
+def _pilula(cor: str, texto: str, fg: str = "#1e1e2e", extra: str = "") -> str:
+    return f"[{CAP_E}](fg:{cor})[{texto}](bg:{cor} fg:{fg}{extra})[{CAP_D}](fg:{cor}) "
 
 
 PRESET_POWERLINE = f"""# Gerado pelo omarchy-manager (preset powerline). Desfaça pela aba Terminal.
@@ -41,7 +41,7 @@ error_symbol = "[✗](bold fg:{ROSA})"
 [directory]
 truncation_length = 3
 truncation_symbol = "…/"
-format = '{_pilula(ROSA, " \uf07b $path ")}'
+format = '{_pilula(ROSA, " \uf07b $path ", "#ffffff", " bold")}'
 
 [git_branch]
 format = '[{CAP_E}](fg:{AMARELO})[ \ue0a0 $branch ](bg:{AMARELO} fg:#1e1e2e)'

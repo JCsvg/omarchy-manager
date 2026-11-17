@@ -2,12 +2,39 @@
 
 from __future__ import annotations
 
-from textual import on
+from textual import events, on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Button, Input, Label, Select, Static, Switch
 
 from omarchy_manager.services import arquivos, prompt_starship, terminal_cfg
+
+
+class CampoNumerico(Input):
+    """Campo de número em que ↑ → k aumentam e ↓ ← j diminuem, dentro de um intervalo."""
+
+    def __init__(self, *, passo: float, minimo: float, maximo: float, decimal: bool = False, **kw) -> None:
+        super().__init__(type="number" if decimal else "integer", **kw)
+        self.passo, self.minimo, self.maximo, self.decimal = passo, minimo, maximo, decimal
+
+    def ajustar(self, sentido: int) -> None:
+        try:
+            atual = float(self.value)
+        except ValueError:
+            atual = self.minimo
+        novo = round(min(self.maximo, max(self.minimo, atual + sentido * self.passo)), 2)
+        self.value = f"{novo:g}" if self.decimal else str(int(novo))
+        self.cursor_position = len(self.value)
+
+    def on_key(self, evento: events.Key) -> None:
+        if evento.key in ("up", "right", "k"):
+            self.ajustar(1)
+        elif evento.key in ("down", "left", "j"):
+            self.ajustar(-1)
+        else:
+            return
+        evento.prevent_default()
+        evento.stop()
 
 
 class AbaTerminal(VerticalScroll):
@@ -26,18 +53,19 @@ class AbaTerminal(VerticalScroll):
     def compose(self) -> ComposeResult:
         yield Static("Terminal padrão: …", id="term-titulo", classes="secao")
         yield Static("", id="term-aviso", classes="dica")
+        yield Static("Nos campos de número, ↑/↓ ou j/k mudam o valor. Tab troca de campo.", classes="dica")
         with Horizontal(classes="linha"):
             yield Label("Opacidade (10 a 100 %)")
-            yield Input(id="term-opacidade", type="integer", max_length=3)
+            yield CampoNumerico(id="term-opacidade", passo=5, minimo=10, maximo=100)
         with Horizontal(classes="linha"):
             yield Label("Fonte")
             yield Input(id="term-fonte")
         with Horizontal(classes="linha"):
             yield Label("Tamanho da fonte")
-            yield Input(id="term-tamanho", type="number", max_length=5)
+            yield CampoNumerico(id="term-tamanho", passo=0.5, minimo=4, maximo=48, decimal=True)
         with Horizontal(classes="linha"):
             yield Label("Margem interna (px)")
-            yield Input(id="term-margem", type="integer", max_length=3)
+            yield CampoNumerico(id="term-margem", passo=1, minimo=0, maximo=100)
         with Horizontal(classes="linha"):
             yield Label("Cursor")
             yield Select([(c, c) for c in terminal_cfg.CURSORES], id="term-cursor", allow_blank=False)
@@ -46,7 +74,7 @@ class AbaTerminal(VerticalScroll):
             yield Switch(id="term-piscar")
         with Horizontal(classes="linha"):
             yield Label("Histórico (linhas)")
-            yield Input(id="term-historico", type="integer", max_length=7)
+            yield CampoNumerico(id="term-historico", passo=1000, minimo=0, maximo=1000000)
         with Horizontal(classes="botoes"):
             yield Button("Aplicar", id="term-aplicar", variant="primary")
             yield Button("Desfazer última mudança", id="term-desfazer")

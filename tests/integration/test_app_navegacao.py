@@ -260,3 +260,25 @@ async def test_ctrl_setas_andam_entre_botoes_e_ctrl_enter_aperta(app, tmp_path, 
         await pilot.press("ctrl+enter")
         await pilot.pause()
         assert "foot.ini" in str(app.query_one("#term-status").render())
+
+
+async def test_campo_numerico_setas_e_jk_mudam_valor(app, tmp_path, monkeypatch):
+    from omarchy_manager.services import terminal_cfg
+
+    foot = tmp_path / "foot.ini"
+    foot.write_text("[main]\npad=5x5\n[colors-dark]\nalpha=0.5\n")
+    monkeypatch.setattr(terminal_cfg, "arquivo_foot", lambda: foot)
+    async with app.run_test(size=(150, 45)) as pilot:
+        await _pronto(app, pilot)
+        await pilot.press("6")
+        await _pronto(app, pilot)
+        campo = app.query_one("#term-opacidade")
+        campo.focus()
+        await pilot.pause()
+        assert campo.value == "50"
+        await pilot.press("up", "k")
+        assert campo.value == "60"
+        await pilot.press("down", "j", "left")
+        assert campo.value == "45"
+        await pilot.press(*["j"] * 20)
+        assert campo.value == "10"
