@@ -187,6 +187,8 @@ TEXTO_AJUDA = """\
 [b]Outras teclas[/b]
   Alt+H / Alt+L     aba anterior / próxima (de qualquer lugar)
   4                 aba Config, com todos os atalhos
+  5                 aba Fundo, imagem da tela sem trocar de tema
+  6                 aba Terminal, opacidade, fonte, cursor e prompt
 
 [b]Mouse[/b]
   clique            selecionar ou ativar

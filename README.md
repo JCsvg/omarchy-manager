@@ -4,7 +4,7 @@ Gerenciador em modo texto (TUI) para o Omarchy: atalhos do Hyprland, plugins
 do Omarchy Shell e temas, em um único lugar, com teclado e mouse, em
 português do Brasil e nas cores do tema ativo.
 
-Versão 0.6.0. Feito para Omarchy com Hyprland em configuração Lua (testado
+Versão 0.7.0. Feito para Omarchy com Hyprland em configuração Lua (testado
 com Omarchy 4.5 e Hyprland 0.56.2).
 
 ## Instalar (como plugin do Omarchy)
@@ -122,6 +122,27 @@ uma prévia, a próxima abertura restaura o tema anterior.
 `Criar tema com IA` abre um chat (Claude Code, Codex, OpenCode ou Copilot
 CLI, o que estiver instalado) em um terminal novo, dentro de uma pasta de
 trabalho própria, com o agente de `agents/criador-de-temas.md`.
+
+### Aba Fundo
+
+Escolhe qualquer imagem (png, jpg, webp) como fundo da tela **sem trocar de
+tema**, usando `omarchy theme bg set`. Lista as imagens de `~/Pictures`,
+`~/Imagens`, `~/Wallpapers` e `~/.config/omarchy/backgrounds`, com prévia.
+`Enter` aplica, `u` volta ao fundo anterior desta sessão. No campo de baixo,
+um caminho de imagem aplica na hora e um caminho de pasta é lembrado em
+`~/.config/omarchy-manager/fundos-pastas.txt`. O fundo vale até o próximo
+`omarchy theme set`, que refaz o fundo do tema.
+
+### Aba Terminal
+
+Edita o `~/.config/foot/foot.ini` (por ora só o Foot): opacidade (10 a 100 %),
+fonte, tamanho, margem interna, cursor, piscar e histórico. Cada gravação faz
+backup em `~/.local/state/omarchy-manager/backups/` e "Desfazer" volta ao
+último. A opacidade vale na hora neste terminal; o resto, em janelas novas.
+
+A seção Prompt aplica um preset **powerline** do Starship (diretório, git,
+.NET, bateria e hora em pílulas), com backup do `starship.toml` e botão para
+restaurar. O Starship valida o preset antes de qualquer troca.
 
 ### Compartilhar com outro computador da mesma rede
 

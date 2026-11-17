@@ -63,13 +63,16 @@ async def test_alt_troca_de_aba_de_qualquer_foco(app):
         await pilot.press("alt+right")
         await pilot.pause()
         assert abas.active == "config"
+        await pilot.press("alt+l", "alt+l")
+        await pilot.pause()
+        assert abas.active == "terminal"
         await pilot.press("alt+l")
         await pilot.pause()
         assert abas.active == "atalhos"  # dá a volta
         await pilot.press("alt+h")
         await pilot.pause()
-        assert abas.active == "config"
-        await pilot.press("alt+left", "alt+left")
+        assert abas.active == "terminal"
+        await pilot.press("alt+left", "alt+left", "alt+left", "alt+left")
         await pilot.pause()
         assert abas.active == "plugins"
 
@@ -216,3 +219,22 @@ async def test_toque_rapido_no_ctrl_nao_aplica(app, executor):
         await pilot.pause(0.7)
         await _pronto(app, pilot)
         assert _sets(executor) == []
+
+
+async def test_abas_fundo_e_terminal_existem_e_abrem(app, tmp_path, monkeypatch):
+    from omarchy_manager.services import terminal_cfg
+
+    foot = tmp_path / "foot.ini"
+    foot.write_text("[main]\nfont=Fira Code:size=9\npad=5x5\n")
+    monkeypatch.setattr(terminal_cfg, "arquivo_foot", lambda: foot)
+    monkeypatch.setattr(terminal_cfg, "terminal_padrao", lambda: "foot")
+    async with app.run_test(size=(150, 45)) as pilot:
+        await _pronto(app, pilot)
+        await pilot.press("5")
+        await _pronto(app, pilot)
+        assert app.query_one(TabbedContent).active == "fundo"
+        await pilot.press("6")
+        await _pronto(app, pilot)
+        assert app.query_one(TabbedContent).active == "terminal"
+        assert app.query_one("#term-fonte").value == "Fira Code"
+        assert app.query_one("#term-margem").value == "5"
