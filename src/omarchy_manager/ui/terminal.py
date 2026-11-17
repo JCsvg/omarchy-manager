@@ -8,6 +8,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Button, Input, Label, Select, Static, Switch
 
 from omarchy_manager.services import arquivos, prompt_posh, terminal_cfg
+from omarchy_manager.ui.navegacao import NavegacaoMixin
 
 
 class CampoNumerico(Input):
@@ -37,7 +38,7 @@ class CampoNumerico(Input):
         evento.stop()
 
 
-class AbaTerminal(VerticalScroll):
+class AbaTerminal(NavegacaoMixin, VerticalScroll):
     DEFAULT_CSS = """
     AbaTerminal { height: 1fr; }
     AbaTerminal .secao { color: $accent; text-style: bold; height: 1; margin-top: 1; }
@@ -50,10 +51,13 @@ class AbaTerminal(VerticalScroll):
     #term-status { height: auto; margin-top: 1; }
     """
 
+    TITULO_AJUDA = "Terminal"
+    RODAPE = ()
+
     def compose(self) -> ComposeResult:
         yield Static("Terminal padrão: …", id="term-titulo", classes="secao")
         yield Static("", id="term-aviso", classes="dica")
-        yield Static("Nos campos de número, ↑/↓ ou j/k mudam o valor. Tab troca de campo.", classes="dica")
+        yield Static("Nos campos de número, ↑/↓ ou j/k mudam o valor. Ctrl+↓/↑ (ou Ctrl+j/k) trocam de campo.", classes="dica")
         with Horizontal(classes="linha"):
             yield Label("Opacidade (10 a 100 %)")
             yield CampoNumerico(id="term-opacidade", passo=5, minimo=10, maximo=100)

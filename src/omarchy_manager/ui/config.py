@@ -10,6 +10,7 @@ from textual.containers import Vertical
 from textual.widgets import DataTable, Static
 
 from omarchy_manager.services import caminhos
+from omarchy_manager.ui.navegacao import NavegacaoMixin
 
 NOMES_TECLA = {
     "question_mark": "?", "slash": "/", "space": "Espaço", "escape": "Esc", "enter": "Enter",
@@ -18,6 +19,8 @@ NOMES_TECLA = {
 
 FIXOS = [
     ("Global", "Tab / Shift+Tab", "Mudar o foco entre campos e botões"),
+    ("Global", "Ctrl+j / Ctrl+k", "Campo ou seção seguinte / anterior (também Ctrl+↓ / Ctrl+↑)"),
+    ("Global", "Ctrl+h / Ctrl+l", "Botão anterior / seguinte (também Ctrl+← / Ctrl+→)"),
     ("Global", "↑ / ↓", "Navegar na lista"),
     ("Global", "Enter", "Executar a ação em foco"),
     ("Global", "Clique do mouse", "Selecionar, ativar um botão ou trocar de aba"),
@@ -85,7 +88,7 @@ def caminhos_legiveis() -> str:
     return "\n".join(f"{r:<{largura}}  {c}" for r, c in itens)
 
 
-class AbaConfig(Vertical):
+class AbaConfig(NavegacaoMixin, Vertical):
     DEFAULT_CSS = """
     AbaConfig { height: 1fr; }
     #config-titulo { color: $accent; text-style: bold; height: 1; }
@@ -93,6 +96,8 @@ class AbaConfig(Vertical):
     #config-caminhos-titulo { color: $accent; text-style: bold; height: 1; margin-top: 1; }
     #config-caminhos { height: auto; color: $text-muted; }
     """
+    TITULO_AJUDA = "Config"
+    RODAPE = ()
     BINDINGS = [
         Binding("j", "cursor_baixo", "Descer na lista", show=False),
         Binding("k", "cursor_cima", "Subir na lista", show=False),

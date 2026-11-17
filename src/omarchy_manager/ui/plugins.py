@@ -16,6 +16,7 @@ from omarchy_manager.models import Plugin
 from omarchy_manager.services.executor import abrir_desanexado
 from omarchy_manager.services.omarchy import ErroOmarchy
 from omarchy_manager.ui.dialogs import Aviso, Confirmacao
+from omarchy_manager.ui.navegacao import NavegacaoMixin
 
 TIPOS_PT = {"bar-widget": "widget da barra", "service": "serviço", "panel": "painel", "overlay": "sobreposição", "bar": "barra", "menu": "menu"}
 AVISO_SANDBOX = "Plugins do Omarchy Shell executam código sem sandbox dentro da sua sessão."
@@ -41,7 +42,7 @@ def legenda(p: Plugin) -> str:
     return "\n".join(linhas)
 
 
-class AbaPlugins(Vertical):
+class AbaPlugins(NavegacaoMixin, Vertical):
     DEFAULT_CSS = """
     AbaPlugins { height: 1fr; }
     #plugins-topo { height: 3; }
@@ -55,6 +56,8 @@ class AbaPlugins(Vertical):
     #plugins-acoes Button { margin-right: 1; min-width: 12; }
     #plugins-status { height: 1; color: $text-muted; }
     """
+    TITULO_AJUDA = "Plugins"
+    RODAPE = ('alternar', 'desinstalar', 'github', 'buscar')
     BINDINGS = [
         Binding("slash", "buscar", "Pesquisar", key_display="/"),
         Binding("j", "cursor_baixo", "Descer na lista", show=False),

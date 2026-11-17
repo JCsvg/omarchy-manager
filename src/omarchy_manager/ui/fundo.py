@@ -12,9 +12,10 @@ from textual.widgets import Button, DataTable, Input, Static
 
 from omarchy_manager.services import fundo_livre
 from omarchy_manager.ui.imagem import ImagemTerminal
+from omarchy_manager.ui.navegacao import NavegacaoMixin
 
 
-class AbaFundo(Vertical):
+class AbaFundo(NavegacaoMixin, Vertical):
     DEFAULT_CSS = """
     AbaFundo { height: 1fr; }
     #fundo-corpo { height: 1fr; }
@@ -28,6 +29,8 @@ class AbaFundo(Vertical):
     #fundo-botoes { height: auto; }
     #fundo-status { height: 1; }
     """
+    TITULO_AJUDA = "Fundo"
+    RODAPE = ('aplicar', 'voltar')
     BINDINGS = [
         Binding("j", "cursor_baixo", "Descer", show=False),
         Binding("k", "cursor_cima", "Subir", show=False),

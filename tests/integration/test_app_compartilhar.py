@@ -6,6 +6,7 @@ import socket
 
 import pytest
 from textual.widgets import Button, DataTable, Input, Static, TabbedContent
+from textual.widgets._footer import FooterKey
 
 from omarchy_manager.app import OmarchyManagerApp
 from omarchy_manager.services import caminhos, recebidos
@@ -18,7 +19,9 @@ from omarchy_manager.services.previa_ao_vivo import PreviaAoVivo
 from omarchy_manager.services.rede import IpLocal
 from omarchy_manager.services.temas import ThemeService
 from omarchy_manager.ui import compartilhar
-from omarchy_manager.ui.compartilhar import AbaCompartilhar, ListaRemota, PedirCaminho
+from omarchy_manager.ui.compartilhar import AbaCompartilhar, ListaRemota
+from omarchy_manager.ui.compartilhar import PedirCaminho
+from omarchy_manager.ui.navegacao import AjudaAba
 from omarchy_manager.ui.dialogs import Aviso, Confirmacao
 
 pytestmark = pytest.mark.skipif(shutil.which("openssl") is None, reason="openssl ausente")
@@ -312,3 +315,86 @@ async def test_tema_recebido_passa_pela_revisao_e_nao_e_aplicado(app, tmp_path, 
             assert not any("set" in c for c in executor.chamadas if c[:2] == ("omarchy", "theme"))
     finally:
         srv.encerrar()
+
+
+# ------------------------------------------------------------ navegação por seções, botões, ajuda e rodapé
+
+def _foco(app):
+    return app.focused.id if app.focused is not None else None
+
+
+@pytest.mark.parametrize("descer,subir", [("ctrl+down", "ctrl+up"), ("ctrl+j", "ctrl+k")])
+async def test_secao_seguinte_e_anterior(app, descer, subir):
+    async with app.run_test(size=(120, 50)) as pilot:
+        await _pronto(app, pilot)
+        assert _foco(app) == "comp-itens"  # foco inicial: a lista do que oferecer
+        await pilot.press(subir)
+        assert _foco(app) == "comp-porta"
+        await pilot.press(subir)
+        assert _foco(app) == "comp-ips"
+        await pilot.press(descer)
+        assert _foco(app) == "comp-porta"
+        await pilot.press(descer)
+        assert _foco(app) == "comp-itens"
+        await pilot.press(descer)
+        assert _foco(app) == "comp-dest-ip"
+        await pilot.press(descer)
+        assert _foco(app) == "comp-dest-ip"  # sem dar a volta
+
+
+async def test_ctrl_jk_dentro_do_campo_nao_digita(app):
+    async with app.run_test(size=(120, 50)) as pilot:
+        await _pronto(app, pilot)
+        await pilot.press("ctrl+k")
+        assert _foco(app) == "comp-porta"
+        await pilot.press("ctrl+j")
+        assert _foco(app) == "comp-itens"
+        assert app.query_one("#comp-porta", Input).value == "8765"
+
+
+async def test_botoes_com_ctrl_setas_e_hl(app):
+    async with app.run_test(size=(120, 50)) as pilot:
+        await _pronto(app, pilot)
+        await pilot.press("ctrl+right")
+        assert _foco(app) == "comp-pasta"
+        await pilot.press("ctrl+l")
+        assert _foco(app) == "comp-arquivo"
+        await pilot.press("ctrl+h")
+        assert _foco(app) == "comp-pasta"
+        await pilot.press("ctrl+left")
+        assert _foco(app) == "comp-oferecer"  # dá a volta
+        await pilot.press("ctrl+enter")  # sem item marcado: só avisa
+        await _pronto(app, pilot)
+        assert "Marque ao menos 1 item" in str(app.query_one("#comp-status", Static).render())
+
+
+@pytest.mark.parametrize("tecla", ["ctrl+@", "ctrl+space"])
+async def test_ajuda_abre_e_fecha(app, tecla):
+    async with app.run_test(size=(120, 50)) as pilot:
+        await _pronto(app, pilot)
+        await pilot.press(tecla)
+        await pilot.pause()
+        assert isinstance(app.screen, AjudaAba)
+        await pilot.press(tecla)
+        await pilot.pause()
+        assert not isinstance(app.screen, AjudaAba)
+        for fecha in ("escape", "q"):
+            await pilot.press(tecla)
+            await pilot.pause()
+            assert isinstance(app.screen, AjudaAba)
+            await pilot.press(fecha)
+            await pilot.pause()
+            assert not isinstance(app.screen, AjudaAba)
+        assert app.is_running  # q fechou o painel, não o app
+
+
+async def test_rodape_enxuto(app):
+    async with app.run_test(size=(120, 50)) as pilot:
+        await _pronto(app, pilot)
+        await pilot.pause()
+        teclas = [str(k.key_display) if hasattr(k, "key_display") else k.key for k in app.query(FooterKey)]
+        assert 1 <= len(teclas) <= 6
+        assert "space" in [k.key for k in app.query(FooterKey)] or "Espaço" in teclas or len(teclas) >= 3
+        await pilot.press("ctrl+k", "ctrl+k")  # lista de IPs
+        await pilot.pause()
+        assert len(list(app.query(FooterKey))) <= 3

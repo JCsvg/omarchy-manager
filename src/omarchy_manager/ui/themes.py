@@ -26,6 +26,7 @@ from omarchy_manager.services.temas import ResultadoAplicacao, nome_de_slug
 from omarchy_manager.services.theme_preview import blocos_de_imagem
 from omarchy_manager.ui.dialogs import CSS_DIALOGO, DICA_FORMULARIO, DICA_LISTA, Aviso, Confirmacao, Dialogo
 from omarchy_manager.ui.imagem import ImagemTerminal
+from omarchy_manager.ui.navegacao import NavegacaoMixin
 
 SEM_PADRAO = "__sem_padrao__"
 TEXTO_PREVIA_DESLIGADA = "Prévia ao vivo desligada. v liga (aplica de verdade o tema em foco); segurar Ctrl faz o mesmo enquanto estiver pressionado."
@@ -193,7 +194,7 @@ class TabelaTemas(DataTable):
             aba.action_fundo_relativo(1)
 
 
-class AbaTemas(Vertical):
+class AbaTemas(NavegacaoMixin, Vertical):
     DEFAULT_CSS = """
     AbaTemas { height: 1fr; }
     #temas-topo { height: 3; }
@@ -216,6 +217,8 @@ class AbaTemas(Vertical):
     #temas-acoes Button { margin-right: 1; min-width: 12; }
     #temas-status { height: 1; color: $text-muted; }
     """
+    TITULO_AJUDA = "Temas"
+    RODAPE = ('fundo_relativo', 'fundo_padrao', 'alternar_previa')
     BINDINGS = [
         Binding("slash", "buscar", "Pesquisar", key_display="/"),
         Binding("j", "cursor_baixo", "Descer na lista", show=False),

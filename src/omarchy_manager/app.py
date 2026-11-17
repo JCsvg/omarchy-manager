@@ -9,7 +9,7 @@ import time
 from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.widgets import Button, Footer, Header, TabbedContent, TabPane
+from textual.widgets import Button, Header, TabbedContent, TabPane
 
 from omarchy_manager import __version__
 from omarchy_manager.services import caminhos, terminal_foot, terminal_grafico
@@ -24,6 +24,7 @@ from omarchy_manager.services.plugin_catalog import PluginCatalog
 from omarchy_manager.services.temas import ThemeService
 from omarchy_manager.services.previa_ao_vivo import PreviaAoVivo
 from omarchy_manager.ui.compartilhar import AbaCompartilhar
+from omarchy_manager.ui.navegacao import AjudaAba, RodapeEnxuto
 from omarchy_manager.ui.config import AbaConfig
 from omarchy_manager.ui.dialogs import Ajuda
 from omarchy_manager.ui.fundo import AbaFundo
@@ -58,9 +59,13 @@ class OmarchyManagerApp(App[None]):
         Binding("7", "aba('compartilhar')", "Compartilhar", show=False),
         Binding("alt+l,alt+right", "aba_relativa(1)", "Próxima aba", key_display="Alt+L", priority=True),
         Binding("alt+h,alt+left", "aba_relativa(-1)", "Aba anterior", key_display="Alt+H", priority=True),
-        Binding("ctrl+right", "botao(1)", "Próximo botão", key_display="Ctrl+→", priority=True),
-        Binding("ctrl+left", "botao(-1)", "Botão anterior", key_display="Ctrl+←", priority=True),
+        Binding("ctrl+right,ctrl+l", "botao(1)", "Próximo botão", key_display="Ctrl+→", priority=True),
+        Binding("ctrl+left,ctrl+h", "botao(-1)", "Botão anterior", key_display="Ctrl+←", priority=True),
+        Binding("ctrl+down,ctrl+j", "secao(1)", "Próxima seção", key_display="Ctrl+↓", priority=True),
+        Binding("ctrl+up,ctrl+k", "secao(-1)", "Seção anterior", key_display="Ctrl+↑", priority=True),
+        Binding("ctrl+@,ctrl+space,ctrl+at,f1", "ajuda_aba", "Ajuda", key_display="Ctrl+Espaço", priority=True),
         Binding("ctrl+enter", "botao_acionar", "Apertar botão", key_display="Ctrl+Enter", priority=True),
+        Binding("escape", "voltar_foco", "Voltar à lista", show=False),
         Binding("f5", "recarregar", "Recarregar"),
         Binding("slash", "buscar", "Pesquisar", key_display="/"),
     ]
@@ -108,7 +113,7 @@ class OmarchyManagerApp(App[None]):
                 yield AbaTerminal()
             with TabPane("Compartilhar", id="compartilhar"):
                 yield AbaCompartilhar()
-        yield Footer()
+        yield RodapeEnxuto()
 
     def on_mount(self) -> None:
         self.aplicar_paleta()
@@ -149,6 +154,36 @@ class OmarchyManagerApp(App[None]):
                 foto.apagar()
         return super().push_screen(*args, **kwargs)
 
+    def nav_da_aba(self):
+        """A aba ativa (ou o diálogo aberto, se tiver navegação própria)."""
+        if len(self.screen_stack) > 1:
+            return self.screen if hasattr(self.screen, "mover_secao") else None
+        tipo = self.aba_ativa()
+        return self.query_one(tipo) if tipo is not None and hasattr(tipo, "mover_secao") else None
+
+    def check_action(self, action: str, parameters: tuple[object, ...]):
+        # Ctrl+j/k e a ajuda da aba valem em toda aba; em diálogo, só a troca de zona.
+        if action == "ajuda_aba":
+            return len(self.screen_stack) == 1 and self.nav_da_aba() is not None
+        if action == "secao":
+            return self.nav_da_aba() is not None
+        return True
+
+    def action_secao(self, passo: int) -> None:
+        nav = self.nav_da_aba()
+        if nav is not None:
+            nav.mover_secao(passo)
+
+    def action_ajuda_aba(self) -> None:
+        nav = self.nav_da_aba()
+        if nav is not None:
+            self.push_screen(AjudaAba(nav.TITULO_AJUDA or "esta aba", nav.texto_ajuda()))
+
+    def action_voltar_foco(self) -> None:
+        nav = self.nav_da_aba()
+        if nav is not None and len(self.screen_stack) == 1:
+            nav.focar_entrada()
+
     def action_ajuda(self) -> None:
         self.push_screen(Ajuda())
 
@@ -188,6 +223,10 @@ class OmarchyManagerApp(App[None]):
             if tipo is None:
                 return []
             raiz = self.query_one(tipo)
+        nav = self.nav_da_aba()
+        fileira = nav.fileira() if nav is not None else []
+        if fileira:
+            return [w for w in fileira if w.focusable]
         return [b for b in raiz.query(Button) if b.display and not b.disabled and b.region.area > 0]
 
     def action_botao(self, passo: int) -> None:
@@ -208,12 +247,7 @@ class OmarchyManagerApp(App[None]):
         tipo = self.aba_ativa()
         if tipo is None:
             return
-        aba = self.query_one(tipo)
-        tabelas = aba.query("DataTable")
-        if tabelas:
-            tabelas.first().focus()
-        elif tipo is AbaTerminal:
-            aba.query_one("#term-opacidade").focus()
+        self.query_one(tipo).focar_entrada()
 
     def action_buscar(self) -> None:
         tipo = self.aba_ativa()

@@ -22,6 +22,7 @@ from omarchy_manager.services.plugin_catalog import atalhos_do_plugin, ler_alias
 from omarchy_manager.services.shortcut_capture import combinacao_de_tecla_textual
 from omarchy_manager.services.teclas import Combinacao
 from omarchy_manager.ui.dialogs import CSS_DIALOGO, Aviso, Confirmacao
+from omarchy_manager.ui.navegacao import NavegacaoMixin
 
 ORIGENS = [("Todas as origens", "todas"), ("Omarchy", "omarchy"), ("Usuário", "usuario"), ("Plugin", "plugin"), ("Gerenciador", "gerenciador")]
 ROTULO_ORIGEM = {"omarchy": "Omarchy", "usuario": "usuário", "plugin": "plugin", "gerenciador": "gerenciador", "desconhecida": "?"}
@@ -100,7 +101,7 @@ class CapturaTecla(ModalScreen[Combinacao | None]):
         self.dismiss(None)
 
 
-class AbaAtalhos(Vertical):
+class AbaAtalhos(NavegacaoMixin, Vertical):
     DEFAULT_CSS = """
     AbaAtalhos { height: 1fr; }
     #atalhos-topo { height: 3; }
@@ -114,6 +115,8 @@ class AbaAtalhos(Vertical):
     #atalhos-acoes Button { margin-right: 1; min-width: 10; }
     #atalhos-status { height: 1; color: $text-muted; }
     """
+    TITULO_AJUDA = "Atalhos"
+    RODAPE = ('editar', 'desfazer', 'buscar')
     BINDINGS = [
         Binding("slash", "buscar", "Pesquisar", key_display="/"),
         Binding("j", "cursor_baixo", "Descer na lista", show=False),

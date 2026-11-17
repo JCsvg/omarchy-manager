@@ -97,13 +97,27 @@ o compartilhamento na rede local.
 | `Alt+L` / `Alt+→` | próxima aba (funciona de qualquer lugar, inclusive da pesquisa) |
 | `Alt+H` / `Alt+←` | aba anterior |
 | `1` a `7` | Atalhos, Plugins, Temas, Config, Fundo, Terminal, Compartilhar (fora de um campo de texto) |
+| `Ctrl+↓` / `Ctrl+j` | próximo campo ou seção (em todas as abas e diálogos) |
+| `Ctrl+↑` / `Ctrl+k` | campo ou seção anterior |
+| `Ctrl+→` / `Ctrl+l` | próximo botão da seção |
+| `Ctrl+←` / `Ctrl+h` | botão anterior |
+| `Ctrl+Enter` | aperta o botão em foco |
+| `Ctrl+Espaço` (ou `F1`) | painel com todas as teclas da aba |
 | `/` | pesquisar |
 | `j` `k` ou setas | navegar |
 | `Enter` | executar a ação em foco |
-| `Esc` | cancelar, limpar a pesquisa, desligar a prévia |
+| `Esc` | cancelar, limpar a pesquisa, desligar a prévia; sem nada a cancelar, volta o foco para a lista |
 | `F5` | recarregar tudo |
 | `?` | ajuda |
 | `q` | sair |
+
+O rodapé mostra só as teclas da seção em foco (no máximo 5); o resto está em
+`Ctrl+Espaço`. Onde `↑`/`↓`/`j`/`k` mudam um valor ou andam linhas, só as
+combinações com `Ctrl` trocam de campo, então nenhuma tela exige `Tab` ou mouse.
+No terminal, `Ctrl+j` chega como Enter em alguns emuladores e `Ctrl+h` como
+Backspace; se o seu fizer isso, use as setas com `Ctrl`. Dentro de um campo de
+texto, `Ctrl+k` troca de seção em vez de apagar até o fim da linha. Se o
+programa rodar dentro do herdr, `Ctrl+Espaço` é o prefixo dele: use `F1`.
 
 Nos diálogos, `←`/`→` ou `h`/`l` movem entre os botões, `↑`/`↓` ou `j`/`k`
 entre os campos, `Enter` ativa o botão em foco (o de cor cheia) e `Esc`
@@ -193,7 +207,7 @@ Oferece plugins de terceiros, temas do usuário, pastas e arquivos a outra
 pessoa da mesma rede, ou lista e baixa o que ela oferece. Teclas: `Espaço`
 ou `Enter` marca ou desmarca o item em foco, `p` e `f` adicionam uma pasta ou um
 arquivo pelo caminho, `o` liga ou desliga a oferta, `r` conecta ao IP e à
-porta da outra pessoa, `j`/`k` e `Ctrl+←`/`Ctrl+→` como nas outras abas.
+porta da outra pessoa, `Ctrl+j`/`Ctrl+k` andam entre as 4 seções, `Ctrl+←`/`Ctrl+→` entre os botões.
 
 1. **Seus IPs.** Lista o IPv4 de cada interface (sem loopback), com o nome
    dela, cabo e Wi-Fi primeiro. A linha em foco é o IP em que o programa

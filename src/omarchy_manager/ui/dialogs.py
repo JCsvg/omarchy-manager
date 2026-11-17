@@ -7,6 +7,7 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
 from textual.events import Key
+from omarchy_manager.ui.navegacao import NavegacaoMixin
 from textual.widgets import Button, DataTable, Input, Label, OptionList, Select, Static
 
 CSS_DIALOGO = """
@@ -46,7 +47,7 @@ DICA_FORMULARIO = "↑/↓ ou Tab mudar de campo · ←/→ entre botões · Ent
 DICA_LISTA = "↑/↓ ou j/k escolher · Enter confirmar · ←/→ botões · Esc cancelar"
 
 
-class Dialogo(ModalScreen):
+class Dialogo(NavegacaoMixin, ModalScreen):
     """Base dos diálogos: setas e hjkl movem o foco, com rodapé dizendo as teclas.
 
     Esquerda/direita (h/l) andam entre os botões da linha de botões. Cima/baixo (j/k)

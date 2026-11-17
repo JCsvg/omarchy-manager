@@ -20,6 +20,7 @@ from omarchy_manager.services.lan_share import ErroLan
 from omarchy_manager.services.log import logger
 from omarchy_manager.services.oferta import ESPERA_APROVACAO, Catalogo, ClienteOferta, ServidorOferta, arquivo_sensivel
 from omarchy_manager.ui.dialogs import CSS_DIALOGO, Aviso, Confirmacao, Dialogo
+from omarchy_manager.ui.navegacao import COMUM, FINAL, NavegacaoMixin
 from omarchy_manager.ui.share import RevisarBundle
 
 PORTA_PADRAO = "8765"
@@ -110,7 +111,7 @@ class ListaRemota(Dialogo):
         self.dismiss(None)
 
 
-class AbaCompartilhar(VerticalScroll):
+class AbaCompartilhar(NavegacaoMixin, VerticalScroll):
     DEFAULT_CSS = """
     AbaCompartilhar { height: 1fr; }
     AbaCompartilhar .secao { color: $accent; text-style: bold; height: 1; margin-top: 1; }
@@ -130,14 +131,25 @@ class AbaCompartilhar(VerticalScroll):
     AbaCompartilhar #comp-oferta-info { height: auto; color: $success; }
     AbaCompartilhar #comp-status { height: auto; margin-top: 1; }
     """
+    SECOES = (("#comp-ips",), ("#comp-porta",), ("#comp-itens", "#comp-pasta", "#comp-arquivo", "#comp-oferecer"),
+              ("#comp-dest-ip", "#comp-dest-porta", "#comp-receber"))
+    TITULO_AJUDA = "Compartilhar"
+    AJUDA = COMUM + """
+[b]Itens[/b]
+  Espaço ou Enter      marca ou desmarca
+  p / f                adicionar pasta / arquivo
+[b]Ações[/b]
+  o                    oferecer ou parar
+  r                    ver o que a outra pessoa oferece
+""" + FINAL
     BINDINGS = [
         Binding("j", "cursor_baixo", "Descer", show=False),
         Binding("k", "cursor_cima", "Subir", show=False),
-        Binding("space", "marcar", "Marcar ou desmarcar"),
-        Binding("p", "pasta", "Adicionar pasta"),
-        Binding("f", "arquivo", "Adicionar arquivo"),
-        Binding("o", "oferecer", "Oferecer ou parar"),
-        Binding("r", "receber", "Ver o que a outra pessoa oferece"),
+        Binding("space", "marcar", "Marca"),
+        Binding("p", "pasta", "Pasta"),
+        Binding("f", "arquivo", "Arquivo"),
+        Binding("o", "oferecer", "Oferecer"),
+        Binding("r", "receber", "Receber"),
     ]
 
     def __init__(self) -> None:
@@ -255,6 +267,17 @@ class AbaCompartilhar(VerticalScroll):
         t = self._tabela_foco()
         if t is not None:
             t.action_cursor_up()
+
+    # ------------------------------------------------------------ seções
+
+    def focar_entrada(self) -> None:
+        self.focar_zona(2)  # o que mais se usa: a lista do que oferecer
+
+    def acoes_do_rodape(self) -> list[str]:
+        f = self.app.focused
+        if isinstance(f, DataTable) and f.id == "comp-itens":
+            return ["marcar", "oferecer", "pasta", "arquivo", "ajuda_aba"]
+        return super().acoes_do_rodape()
 
     # ------------------------------------------------------------ IP e porta
 
