@@ -45,9 +45,13 @@ def test_preset_powerline_tem_pilulas_e_marca():
     assert "${count}" in prompt_starship.PRESET_POWERLINE
 
 
-def test_listar_fundos_respeita_extensao_e_profundidade(tmp_path):
+def test_listar_fundos_inclui_subpastas_ate_3_niveis(tmp_path, monkeypatch):
+    monkeypatch.setattr(caminhos, "CONFIG_DIR", tmp_path / "cfg")
     (tmp_path / "a" / "b" / "c" / "d").mkdir(parents=True)
-    for rel in ("um.png", "a/dois.JPG", "a/b/tres.webp", "a/b/c/quatro.png", "a/b/c/d/fundo.png", "nota.txt"):
+    for rel in ("b.png", "x.JPG", "a/dois.webp", "a/b/c/quatro.png", "a/b/c/d/cinco.png", "nota.txt"):
         (tmp_path / rel).write_bytes(b"x")
-    nomes = [p.name for p in fundo_livre.listar([tmp_path])]
-    assert nomes == ["um.png", "dois.JPG", "tres.webp", "quatro.png"]
+    assert [p.name for p in fundo_livre.listar(tmp_path)] == ["b.png", "x.JPG", "dois.webp", "quatro.png"]
+    assert fundo_livre.listar(None) == []
+    assert fundo_livre.pasta_escolhida() is None
+    fundo_livre.definir_pasta(tmp_path)
+    assert fundo_livre.pasta_escolhida() == tmp_path.resolve()

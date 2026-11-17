@@ -1,6 +1,6 @@
 """Imagens para usar como fundo da tela sem trocar de tema.
 
-Só lista e guarda pastas extras; quem aplica é `omarchy theme bg set`. O fundo
+Só lista a pasta que o usuário escolheu (com subpastas) e a guarda; quem aplica é `omarchy theme bg set`. O fundo
 escolhido vale até o próximo `omarchy theme set` (o Omarchy refaz o fundo do
 tema), como já acontece com o `omarchy theme bg next`.
 """
@@ -13,63 +13,48 @@ from pathlib import Path
 from omarchy_manager.services import caminhos
 
 EXTENSOES = {".png", ".jpg", ".jpeg", ".webp"}
-PROFUNDIDADE = 3
 LIMITE = 600
+PROFUNDIDADE = 3
 
 
-def arquivo_pastas() -> Path:
-    return caminhos.CONFIG_DIR / "fundos-pastas.txt"
+def arquivo_pasta() -> Path:
+    return caminhos.CONFIG_DIR / "fundo-pasta.txt"
 
 
-def pastas_extras() -> list[Path]:
+def pasta_escolhida() -> Path | None:
+    """A pasta que o usuário escolheu da última vez, se ainda existir."""
     try:
-        linhas = arquivo_pastas().read_text(encoding="utf-8").splitlines()
+        linha = arquivo_pasta().read_text(encoding="utf-8").strip()
     except OSError:
-        return []
-    return [Path(linha.strip()).expanduser() for linha in linhas if linha.strip()]
+        return None
+    pasta = Path(linha).expanduser() if linha else None
+    return pasta if pasta is not None and pasta.is_dir() else None
 
 
-def pastas_padrao() -> list[Path]:
-    casa = Path.home()
-    return [
-        casa / "Pictures",
-        casa / "Imagens",
-        casa / "Wallpapers",
-        caminhos.OMARCHY_USER_BACKGROUNDS,
-        *pastas_extras(),
-    ]
-
-
-def adicionar_pasta(pasta: Path) -> None:
-    pasta = Path(pasta).expanduser().resolve()
-    if pasta in [p.resolve() for p in pastas_extras()]:
-        return
-    arq = arquivo_pastas()
+def definir_pasta(pasta: Path) -> None:
+    arq = arquivo_pasta()
     arq.parent.mkdir(parents=True, exist_ok=True)
-    with arq.open("a", encoding="utf-8") as fh:
-        fh.write(f"{pasta}\n")
+    arq.write_text(f"{Path(pasta).expanduser().resolve()}\n", encoding="utf-8")
 
 
 def eh_imagem(caminho: Path) -> bool:
     return caminho.suffix.lower() in EXTENSOES and caminho.is_file()
 
 
-def listar(pastas: list[Path] | None = None, limite: int = LIMITE) -> list[Path]:
-    """Imagens das pastas, sem repetir e sem passar de `PROFUNDIDADE` níveis."""
-    achadas: dict[Path, None] = {}
-    for pasta in pastas if pastas is not None else pastas_padrao():
-        pasta = Path(pasta).expanduser()
-        if not pasta.is_dir():
-            continue
-        base = len(pasta.resolve().parts)
-        for raiz, subs, arquivos in os.walk(pasta.resolve()):
-            if len(Path(raiz).parts) - base >= PROFUNDIDADE:
-                subs[:] = []
-            subs[:] = sorted(s for s in subs if not s.startswith("."))
-            for nome in sorted(arquivos):
-                caminho = Path(raiz) / nome
-                if eh_imagem(caminho):
-                    achadas[caminho] = None
-                    if len(achadas) >= limite:
-                        return list(achadas)
-    return list(achadas)
+def listar(pasta: Path | None, limite: int = LIMITE) -> list[Path]:
+    """Imagens da pasta e das subpastas, até PROFUNDIDADE níveis, em ordem de nome."""
+    if pasta is None or not Path(pasta).is_dir():
+        return []
+    raiz = Path(pasta).resolve()
+    achadas: list[Path] = []
+    for atual, subs, arquivos in os.walk(raiz):
+        if len(Path(atual).parts) - len(raiz.parts) >= PROFUNDIDADE:
+            subs[:] = []
+        subs[:] = sorted(d for d in subs if not d.startswith("."))
+        for nome in sorted(arquivos):
+            caminho = Path(atual) / nome
+            if eh_imagem(caminho):
+                achadas.append(caminho)
+                if len(achadas) >= limite:
+                    return achadas
+    return achadas

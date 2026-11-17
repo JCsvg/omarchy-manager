@@ -126,12 +126,13 @@ trabalho própria, com o agente de `agents/criador-de-temas.md`.
 ### Aba Fundo
 
 Escolhe qualquer imagem (png, jpg, webp) como fundo da tela **sem trocar de
-tema**, usando `omarchy theme bg set`. Lista as imagens de `~/Pictures`,
-`~/Imagens`, `~/Wallpapers` e `~/.config/omarchy/backgrounds`, com prévia.
-`Enter` aplica, `u` volta ao fundo anterior desta sessão. No campo de baixo,
-um caminho de imagem aplica na hora e um caminho de pasta é lembrado em
-`~/.config/omarchy-manager/fundos-pastas.txt`. O fundo vale até o próximo
-`omarchy theme set`, que refaz o fundo do tema.
+tema**, usando `omarchy theme bg set`. Você digita o caminho de uma pasta no
+campo de baixo e a aba lista as imagens dela e das subpastas (até 3
+níveis), com prévia. A pasta fica lembrada em
+`~/.config/omarchy-manager/fundo-pasta.txt`. `Enter` na lista aplica, `u`
+volta ao fundo anterior desta sessão, e um caminho de imagem no campo aplica
+na hora. O fundo vale até o próximo `omarchy theme set`, que refaz o fundo
+do tema.
 
 ### Aba Terminal
 

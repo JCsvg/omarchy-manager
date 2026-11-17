@@ -39,6 +39,7 @@ class AbaFundo(Vertical):
         super().__init__()
         self._imagens: list[Path] = []
         self._anterior: Path | None = None
+        self._pasta: Path | None = None
 
     def compose(self) -> ComposeResult:
         yield Static("Fundo da tela (sem trocar de tema)", id="fundo-titulo")
@@ -46,9 +47,9 @@ class AbaFundo(Vertical):
         with Horizontal(id="fundo-corpo"):
             with Vertical(id="fundo-esq"):
                 tabela = DataTable(id="fundo-tabela", cursor_type="row", zebra_stripes=True)
-                tabela.add_columns("Imagem", "Pasta")
+                tabela.add_columns("Imagem", "Subpasta")
                 yield tabela
-                yield Input(placeholder="Caminho de uma imagem ou pasta, Enter adiciona", id="fundo-caminho")
+                yield Input(placeholder="Pasta das imagens (ou uma imagem), Enter confirma", id="fundo-caminho")
             with Vertical(id="fundo-dir"):
                 yield ImagemTerminal(id="fundo-previa")
                 yield Static("", id="fundo-info")
@@ -64,17 +65,36 @@ class AbaFundo(Vertical):
         self.call_after_refresh(self._mostrar_atual)
 
     def recarregar(self) -> None:
-        self._imagens = fundo_livre.listar()
+        self._pasta = fundo_livre.pasta_escolhida()
+        self._imagens = fundo_livre.listar(self._pasta)
         tabela = self.query_one("#fundo-tabela", DataTable)
         tabela.clear()
         for img in self._imagens:
-            tabela.add_row(img.name, str(img.parent).replace(str(Path.home()), "~"), key=str(img))
+            tabela.add_row(img.name, self._subpasta(img), key=str(img))
         atual = self.app.omarchy.theme_bg_current_path()
         self.query_one("#fundo-atual", Static).update(
             f"Fundo atual: {atual}" if atual else "Fundo atual: não foi possível ler"
         )
         if not self._imagens:
-            self._status("Nenhuma imagem em ~/Pictures, ~/Imagens, ~/Wallpapers ou ~/.config/omarchy/backgrounds. Adicione uma pasta abaixo.")
+            self._status(
+                "Digite abaixo o caminho da pasta com as suas imagens e aperte Enter."
+                if self._pasta is None
+                else f"Nenhuma imagem png, jpg ou webp em {self._pasta}."
+            )
+        else:
+            self._status(f"Pasta: {self._pasta}  ({len(self._imagens)} imagens)")
+        campo = self.query_one("#fundo-caminho", Input)
+        if self._pasta is not None and not campo.value:
+            campo.value = str(self._pasta)
+
+    def _subpasta(self, img: Path) -> str:
+        if self._pasta is None:
+            return ""
+        try:
+            rel = img.parent.relative_to(self._pasta.resolve())
+        except ValueError:
+            return str(img.parent)
+        return str(rel) if str(rel) != "." else ""
 
     def action_buscar(self) -> None:
         pass
@@ -148,12 +168,10 @@ class AbaFundo(Vertical):
             return
         caminho = Path(bruto).expanduser()
         if caminho.is_dir():
-            fundo_livre.adicionar_pasta(caminho)
-            evento.input.value = ""
+            fundo_livre.definir_pasta(caminho)
+            evento.input.value = str(caminho.resolve())
             self.recarregar()
-            self._status(f"Pasta adicionada: {caminho}")
         elif fundo_livre.eh_imagem(caminho):
-            evento.input.value = ""
             self._aplicar(caminho)
         else:
             self._status("Não é uma pasta nem uma imagem png, jpg ou webp.")
