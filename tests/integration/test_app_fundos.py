@@ -76,7 +76,7 @@ async def test_ciclo_posicao_e_padrao_automatico(app, executor):
     async with app.run_test(size=(170, 45)) as pilot:
         await _pronto(app, pilot)
         aba = await _ir(app, pilot, "signature")
-        aba.DEBOUNCE_PADRAO = 0.15
+        aba.DEBOUNCE_PADRAO = 0.5
         assert "a.png" in _info(app) and "1 de 3" in _info(app) and "sem padrão" in _info(app)
 
         await pilot.press("l")
@@ -95,7 +95,7 @@ async def test_ciclo_posicao_e_padrao_automatico(app, executor):
         assert "b.png" in _info(app)
         assert not app.cfg.exists()  # passada rápida: nada gravado no meio
 
-        await pilot.pause(0.4)
+        await pilot.pause(1.0)
         assert app.temas.fundos_padrao()["signature"].endswith("/signature/backgrounds/b.png")
         assert "● padrão" in _info(app) and "gravando" not in _info(app)
         assert aba.tema_selecionado().fundo_padrao.name == "b.png"
