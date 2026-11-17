@@ -1,11 +1,47 @@
 # omarchy-manager
 
-Gerenciador em modo texto (TUI) para o Omarchy: atalhos do Hyprland, plugins
-do Omarchy Shell e temas, em um único lugar, com teclado e mouse, em
-português do Brasil e nas cores do tema ativo.
+TUI em Python (Textual) para o Omarchy: edita atalhos do Hyprland, liga e
+desliga plugins do Omarchy Shell, troca temas e fundos e ajusta o terminal
+Foot, tudo em português do Brasil e nas cores do tema ativo.
 
-Versão 0.7.0. Feito para Omarchy com Hyprland em configuração Lua (testado
-com Omarchy 4.5 e Hyprland 0.56.2).
+Versão 0.7.0. Testado com Omarchy 4.5 e Hyprland 0.56.2 (configuração Lua).
+
+## Capturas de tela
+
+![Aba Temas: lista, paleta, exemplo de terminal e fundo do tema](docs/img/temas.png)
+
+Temas: paleta, exemplo de terminal e imagem de fundo do tema em foco.
+
+![Aba Plugins: 81 plugins com estado, descrição e origem](docs/img/plugins.png)
+
+Plugins: estado, descrição em português, tipo, origem e versão.
+
+![Aba Atalhos: 255 atalhos do Hyprland com origem e estado](docs/img/atalhos.png)
+
+Atalhos: bindings efetivos do Hyprland, com origem e marcação de duplicados.
+
+![Aba Terminal: opacidade, fonte, margem, cursor e prompt](docs/img/terminal.png)
+
+Terminal: edição do `foot.ini` e prompt Oh My Posh.
+
+![Aba Config: atalhos do programa e caminhos dos arquivos](docs/img/config.png)
+
+Config: todas as teclas do programa e os arquivos que ele usa.
+
+## Recursos
+
+- 6 abas: Atalhos, Plugins, Temas, Config, Fundo e Terminal.
+- Atalhos: edição com captura da combinação, aviso de conflito, backup e
+  desfazer; reverte sozinho se o Hyprland acusar erro.
+- Plugins: liga, desliga, desinstala (só de terceiros) e abre o repositório,
+  com nome e descrição traduzidos.
+- Temas: prévia da paleta e do fundo, prévia ao vivo, aplicar e criar tema
+  com um agente de IA instalado.
+- Fundo: qualquer png, jpg ou webp como fundo, sem trocar de tema.
+- Terminal: opacidade, fonte, margem, cursor e histórico do Foot, mais o
+  prompt Oh My Posh.
+- Compartilhar plugin ou tema com outro computador da mesma rede, por HTTPS.
+- Teclado e mouse.
 
 ## Instalar (como plugin do Omarchy)
 
@@ -50,13 +86,13 @@ ImageMagick (`magick`) para a imagem dos fundos, `chafa` para blocos mais
 nítidos em terminal sem gráficos, `openssl` e `avahi` para
 o compartilhamento na rede local.
 
-## Usar
+## Atalhos de teclado
 
 | Tecla | O que faz |
 |---|---|
 | `Alt+L` / `Alt+→` | próxima aba (funciona de qualquer lugar, inclusive da pesquisa) |
 | `Alt+H` / `Alt+←` | aba anterior |
-| `1` `2` `3` `4` | Atalhos, Plugins, Temas, Config (fora de um campo de texto) |
+| `1` a `6` | Atalhos, Plugins, Temas, Config, Fundo, Terminal (fora de um campo de texto) |
 | `/` | pesquisar |
 | `j` `k` ou setas | navegar |
 | `Enter` | executar a ação em foco |
