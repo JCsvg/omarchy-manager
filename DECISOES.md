@@ -503,3 +503,53 @@ desliga um bloco entre marcadores no `~/.bashrc` (`oh-my-posh init bash
 --config ...`), com backup a cada gravação. Operação idempotente e
 reversível. Nada do Omarchy é alterado. Os segmentos usam texto branco ou
 escuro conforme o fundo, sem texto preto sobre cor escura.
+
+## 16. Aba Compartilhar
+
+Pedido do JC: aba própria (tecla `7`) para oferecer e receber plugins,
+temas, pastas e arquivos pela rede local, mantendo os diálogos `c` de
+Plugins e Temas. As salvaguardas abaixo vieram do IAM e o JC pode vetar.
+
+Fatos:
+
+- `services/rede.py`: IPv4 por interface via `ip -j -4 addr` (sem loopback,
+  cabo e Wi-Fi primeiro) e teste de porta por `bind` + `listen` real no IP
+  escolhido, com `SO_REUSEADDR` como no servidor de envio.
+- `services/oferta.py`: `Catalogo` (só entra o que foi marcado; a listagem
+  pública traz id, tipo, nome, tamanho e nunca o caminho local),
+  `ServidorOferta` (HTTPS TLS 1.3, certificado de `gerar_certificado`,
+  vale 30 minutos) e `ClienteOferta`.
+- Protocolo: `POST /conectar` pede a aprovação de quem oferece (IP do
+  cliente e código de 6 palavras, 60 s para responder, 1 pedido por vez) e
+  devolve um token de sessão preso ao IP; `GET /lista` e `GET /item/<id>`
+  exigem o token. Sem aprovação, 403. Item baixado leva SHA-256, conferido
+  pelo cliente.
+- Sem convite não há segredo compartilhado. A confiança vem da fingerprint
+  fixada pelo cliente, do código de 6 palavras derivado só dela (segredo
+  vazio em `codigo_de_confirmacao`) e da aprovação manual. Os 2 lados
+  precisam ver o mesmo código; o cliente o mostra antes de pedir a conexão.
+- `bundle.py` ganhou o tipo `pasta`, que só vale para guardar em Downloads
+  e é recusado por `instalar_recebido`. Plugin e tema recebidos usam
+  `RevisarBundle` (em `ui/share.py`), que divide `resumo_do_bundle` e
+  `instalar_revisado` com o `Receber`.
+- `services/recebidos.py`: destino em `~/Downloads/omarchy-manager/`, nome
+  reduzido ao basename, modo 0644 (diretórios 0755), `JaExiste` quando o
+  destino existe; sobrescrever só após pergunta, com o antigo movido para
+  `~/.local/state/omarchy-manager/backups/`.
+- Arquivo marcado à mão com nome que casa as exclusões do bundle (token,
+  secret, credential, chaves, `.env`) é recusado, no cadastro e de novo no
+  envio. Essa regra é escolha de implementação, não pedido literal.
+- Cores da caixa de porta: verde `#3fb950` e vermelho `#f85149` fixos. No
+  tema ativo do JC (`green = #e75a50`) o verde da paleta é avermelhado e
+  não distinguiria livre de ocupada.
+- O CSS do app (`DataTable { height: 1fr }`) vence o `DEFAULT_CSS` dos
+  widgets; as alturas das tabelas da aba são definidas por `styles.height`.
+
+Testes: `tests/unit/test_rede_oferta.py`,
+`tests/integration/test_oferta_loopback.py` e
+`tests/integration/test_app_compartilhar.py`, todos só em 127.0.0.1.
+
+Não validado: 2 máquinas reais (mDNS não é usado nesta aba), Wi-Fi com
+isolamento de clientes, IPv6 (a aba só lista IPv4), firewall bloqueando a
+porta escolhida (o teste de bind prova que dá para escutar, não que o outro
+computador alcança).

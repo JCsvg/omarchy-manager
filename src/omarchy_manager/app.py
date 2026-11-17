@@ -23,6 +23,7 @@ from omarchy_manager.services.paleta import paleta_atual, tema_textual
 from omarchy_manager.services.plugin_catalog import PluginCatalog
 from omarchy_manager.services.temas import ThemeService
 from omarchy_manager.services.previa_ao_vivo import PreviaAoVivo
+from omarchy_manager.ui.compartilhar import AbaCompartilhar
 from omarchy_manager.ui.config import AbaConfig
 from omarchy_manager.ui.dialogs import Ajuda
 from omarchy_manager.ui.fundo import AbaFundo
@@ -54,6 +55,7 @@ class OmarchyManagerApp(App[None]):
         Binding("4", "aba('config')", "Config", show=False),
         Binding("5", "aba('fundo')", "Fundo", show=False),
         Binding("6", "aba('terminal')", "Terminal", show=False),
+        Binding("7", "aba('compartilhar')", "Compartilhar", show=False),
         Binding("alt+l,alt+right", "aba_relativa(1)", "Próxima aba", key_display="Alt+L", priority=True),
         Binding("alt+h,alt+left", "aba_relativa(-1)", "Aba anterior", key_display="Alt+H", priority=True),
         Binding("ctrl+right", "botao(1)", "Próximo botão", key_display="Ctrl+→", priority=True),
@@ -104,6 +106,8 @@ class OmarchyManagerApp(App[None]):
                 yield AbaFundo()
             with TabPane("Terminal", id="terminal"):
                 yield AbaTerminal()
+            with TabPane("Compartilhar", id="compartilhar"):
+                yield AbaCompartilhar()
         yield Footer()
 
     def on_mount(self) -> None:
@@ -150,9 +154,9 @@ class OmarchyManagerApp(App[None]):
 
     def aba_ativa(self):
         abas = self.query_one("#abas", TabbedContent)
-        return {"atalhos": AbaAtalhos, "plugins": AbaPlugins, "temas": AbaTemas, "config": AbaConfig, "fundo": AbaFundo, "terminal": AbaTerminal}.get(abas.active)
+        return {"atalhos": AbaAtalhos, "plugins": AbaPlugins, "temas": AbaTemas, "config": AbaConfig, "fundo": AbaFundo, "terminal": AbaTerminal, "compartilhar": AbaCompartilhar}.get(abas.active)
 
-    ORDEM_ABAS = ("atalhos", "plugins", "temas", "config", "fundo", "terminal")
+    ORDEM_ABAS = ("atalhos", "plugins", "temas", "config", "fundo", "terminal", "compartilhar")
 
     def action_aba(self, aba: str) -> None:
         if len(self.screen_stack) > 1:  # diálogo aberto: não troca por baixo dele
@@ -232,6 +236,8 @@ class OmarchyManagerApp(App[None]):
         self.call_after_refresh(self.focar_tabela)
 
     async def action_quit(self) -> None:
+        for aba in self.query(AbaCompartilhar):
+            aba.parar_oferta()
         for aba in self.query(AbaTemas):
             aba.gravar_padrao_pendente()
         if self.previa.restaurar():
@@ -241,7 +247,7 @@ class OmarchyManagerApp(App[None]):
     def action_recarregar(self) -> None:
         self.aplicar_paleta()
         aba = self.query_one("#abas", TabbedContent).active
-        for widget in self.query("AbaAtalhos, AbaPlugins, AbaTemas, AbaFundo, AbaTerminal"):
+        for widget in self.query("AbaAtalhos, AbaPlugins, AbaTemas, AbaFundo, AbaTerminal, AbaCompartilhar"):
             recarregar = getattr(widget, "recarregar", None)
             if recarregar is not None:
                 recarregar()

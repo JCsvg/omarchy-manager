@@ -69,7 +69,7 @@ async def test_abas_e_listagem(app, executor):
     async with app.run_test(size=(120, 40)) as pilot:
         await _pronto(app, pilot)
         abas = app.query_one(TabbedContent)
-        assert [p.id for p in abas.query("TabPane")] == ["atalhos", "plugins", "temas", "config", "fundo", "terminal"]
+        assert [p.id for p in abas.query("TabPane")] == ["atalhos", "plugins", "temas", "config", "fundo", "terminal", "compartilhar"]
         assert abas.active == "plugins"
         tabela = app.query_one("#plugins-tabela", DataTable)
         assert tabela.row_count == 5

@@ -56,12 +56,13 @@ def linhas_de_bindings(contexto: str, bindings) -> list[tuple[str, str, str]]:
 def todos_os_atalhos() -> list[tuple[str, str, str]]:
     from omarchy_manager.app import OmarchyManagerApp
     from omarchy_manager.ui.plugins import AbaPlugins
+    from omarchy_manager.ui.compartilhar import AbaCompartilhar
     from omarchy_manager.ui.shortcuts import AbaAtalhos
     from omarchy_manager.ui.themes import AbaTemas
 
     linhas = linhas_de_bindings("Global", OmarchyManagerApp.BINDINGS)
     linhas += [f for f in FIXOS if f[0] == "Global"]
-    for contexto, classe in (("Atalhos", AbaAtalhos), ("Plugins", AbaPlugins), ("Temas", AbaTemas)):
+    for contexto, classe in (("Atalhos", AbaAtalhos), ("Plugins", AbaPlugins), ("Temas", AbaTemas), ("Compartilhar", AbaCompartilhar)):
         linhas += linhas_de_bindings(contexto, classe.BINDINGS)
         linhas += [f for f in FIXOS if f[0].startswith(contexto)]
     linhas += [f for f in FIXOS if f[0] == "Diálogos"]

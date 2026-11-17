@@ -68,11 +68,14 @@ async def test_alt_troca_de_aba_de_qualquer_foco(app):
         assert abas.active == "terminal"
         await pilot.press("alt+l")
         await pilot.pause()
+        assert abas.active == "compartilhar"
+        await pilot.press("alt+l")
+        await pilot.pause()
         assert abas.active == "atalhos"  # dá a volta
         await pilot.press("alt+h")
         await pilot.pause()
-        assert abas.active == "terminal"
-        await pilot.press("alt+left", "alt+left", "alt+left", "alt+left")
+        assert abas.active == "compartilhar"
+        await pilot.press("alt+left", "alt+left", "alt+left", "alt+left", "alt+left")
         await pilot.pause()
         assert abas.active == "plugins"
 

@@ -164,7 +164,7 @@ class Aviso(Dialogo):
 TEXTO_AJUDA = """\
 [b]Navegação[/b]
   Tab / Shift+Tab   mudar o foco
-  1, 2, 3           ir para Atalhos, Plugins, Temas
+  1 a 7             ir para uma aba (Atalhos ... Compartilhar)
   ↑ ↓ ou j k        navegar na lista
   Enter             executar a ação em foco
   /                 pesquisar
@@ -189,6 +189,7 @@ TEXTO_AJUDA = """\
   4                 aba Config, com todos os atalhos
   5                 aba Fundo, imagem da tela sem trocar de tema
   6                 aba Terminal, opacidade, fonte, cursor e prompt
+  7                 aba Compartilhar, oferecer e receber pela rede local
 
 [b]Mouse[/b]
   clique            selecionar ou ativar

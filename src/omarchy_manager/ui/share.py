@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -28,6 +29,41 @@ from omarchy_manager.ui.dialogs import CSS_DIALOGO, DICA_FORMULARIO, Aviso, Dial
 
 RECEBIDOS_DIR = caminhos.DATA_DIR / "recebidos"
 EXPORT_DIR = Path.home() / "Downloads"
+
+
+def resumo_do_bundle(man, pasta: Path) -> str:
+    """Texto de revisão de um plugin ou tema recebido (manifesto, hash, executáveis)."""
+    exe = executaveis_em(pasta)
+    return (
+        f"[b]{man.nome}[/b] ({man.tipo} {man.id}) v{man.versao or '?'} de {man.autor or '?'}\n"
+        f"licença: {man.licenca or '(ausente)'}   origem: {man.origem or '?'}\n"
+        f"{len(man.arquivos)} arquivos, {man.tamanho / 1024:.0f} KiB, hash conferido\n"
+        f"executáveis/código: {', '.join(exe) if exe else 'nenhum'}\n"
+        + ("[yellow]Plugins rodam sem sandbox. Será instalado DESLIGADO.[/yellow]" if man.tipo == "plugin" else "O tema NÃO será aplicado; aparece na aba Temas para prévia.")
+    )
+
+
+def instalar_revisado(tela, pasta: Path, man) -> None:
+    """Instala o recebido já revisado. Se já existe, pergunta antes de substituir (com backup).
+    Fecha `tela` devolvendo o destino. Nunca liga o plugin nem aplica o tema."""
+    try:
+        r = instalar_recebido(pasta, man, confirmado=True)
+    except ErroBundle as exc:
+        if "já existe" in str(exc):
+            from omarchy_manager.ui.dialogs import Confirmacao
+
+            def depois(ok: bool | None) -> None:
+                if ok:
+                    r2 = instalar_recebido(pasta, man, confirmado=True, substituir=True)
+                    tela.app.notify(r2.aviso, severity="warning", timeout=8)
+                    tela.dismiss(r2.destino)
+
+            tela.app.push_screen(Confirmacao("Já existe", f"{exc}\n\nSubstituir após backup?", confirmar="Substituir após backup", perigo=True), depois)
+            return
+        tela.app.push_screen(Aviso("Falha ao instalar", str(exc)))
+        return
+    tela.app.notify(r.aviso, severity="warning", timeout=8)
+    tela.dismiss(r.destino)
 
 
 class Compartilhar(Dialogo):
@@ -217,14 +253,7 @@ class Receber(Dialogo):
             self.app.call_from_thread(self.query_one("#rec-status", Static).update, f"[red]Recusado: {exc}[/red]")
             return
         self._pasta, self._manifesto = pasta, man
-        exe = executaveis_em(pasta)
-        resumo = (
-            f"[b]{man.nome}[/b] ({man.tipo} {man.id}) v{man.versao or '?'} de {man.autor or '?'}\n"
-            f"licença: {man.licenca or '(ausente)'}   origem: {man.origem or '?'}\n"
-            f"{len(man.arquivos)} arquivos, {man.tamanho / 1024:.0f} KiB, hash conferido\n"
-            f"executáveis/código: {', '.join(exe) if exe else 'nenhum'}\n"
-            + ("[yellow]Plugins rodam sem sandbox. Será instalado DESLIGADO.[/yellow]" if man.tipo == "plugin" else "O tema NÃO será aplicado; aparece na aba Temas para prévia.")
-        )
+        resumo = resumo_do_bundle(man, pasta)
         self.app.call_from_thread(self.query_one("#resumo-texto", Static).update, resumo)
         self.app.call_from_thread(self.query_one("#rec-status", Static).update, "Revise e, se concordar, instale.")
         self.app.call_from_thread(setattr, self.query_one("#instalar", Button), "disabled", False)
@@ -233,28 +262,44 @@ class Receber(Dialogo):
     def _instalar(self) -> None:
         if self._pasta is None or self._manifesto is None:
             return
-        try:
-            r = instalar_recebido(self._pasta, self._manifesto, confirmado=True)
-        except ErroBundle as exc:
-            if "já existe" in str(exc):
-                from omarchy_manager.ui.dialogs import Confirmacao
-
-                def depois(ok: bool | None) -> None:
-                    if ok:
-                        r2 = instalar_recebido(self._pasta, self._manifesto, confirmado=True, substituir=True)
-                        self.app.notify(r2.aviso, severity="warning", timeout=8)
-                        self.dismiss(r2.destino)
-
-                self.app.push_screen(Confirmacao("Já existe", f"{exc}\n\nSubstituir após backup?", confirmar="Substituir após backup", perigo=True), depois)
-                return
-            self.app.push_screen(Aviso("Falha ao instalar", str(exc)))
-            return
-        self.app.notify(r.aviso, severity="warning", timeout=8)
-        self.dismiss(r.destino)
+        instalar_revisado(self, self._pasta, self._manifesto)
 
     def on_button_pressed(self, ev: Button.Pressed) -> None:
         if ev.button.id == "cancelar":
             self.action_cancelar()
 
     def action_cancelar(self) -> None:
+        self.dismiss(None)
+
+
+class RevisarBundle(Dialogo):
+    """Revisão de um plugin ou tema já baixado e validado (vindo da aba Compartilhar). Mesmo fluxo do Receber."""
+
+    DEFAULT_CSS = CSS_DIALOGO + """
+    RevisarBundle #caixa { width: 90; }
+    RevisarBundle #resumo { height: auto; max-height: 18; border: round $panel; padding: 0 1; }
+    """
+    BINDINGS = [Binding("escape", "cancelar", "Cancelar", priority=True)]
+    FOCO_INICIAL = "#cancelar"
+
+    def __init__(self, pasta: Path, manifesto, origem: str = "") -> None:
+        super().__init__()
+        self._pasta, self._manifesto, self._origem = pasta, manifesto, origem
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="caixa"):
+            yield Label(f"Revisar {self._manifesto.tipo} recebido" + (f" de {self._origem}" if self._origem else ""), classes="titulo")
+            with VerticalScroll(id="resumo"):
+                yield Static(resumo_do_bundle(self._manifesto, self._pasta))
+            with Horizontal(id="botoes"):
+                yield Button("Cancelar", id="cancelar")
+                yield Button("Instalar desligado", id="instalar", variant="primary")
+
+    @on(Button.Pressed, "#instalar")
+    def _instalar(self) -> None:
+        instalar_revisado(self, self._pasta, self._manifesto)
+
+    @on(Button.Pressed, "#cancelar")
+    def action_cancelar(self) -> None:
+        shutil.rmtree(self._pasta, ignore_errors=True)
         self.dismiss(None)

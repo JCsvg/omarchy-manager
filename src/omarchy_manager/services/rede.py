@@ -40,7 +40,7 @@ def interpretar_ip_addr(texto: str) -> list[IpLocal]:
             ip = str(a.get("local", ""))
             if a.get("family") == "inet" and ip and not ip.startswith("127."):
                 saida.append(IpLocal(nome, ip, _tipo(nome)))
-    return saida
+    return sorted(saida, key=lambda i: i.tipo == "outra")  # cabo e Wi-Fi antes de docker, bridges, VPN
 
 
 def ips_locais() -> list[IpLocal]:

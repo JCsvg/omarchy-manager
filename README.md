@@ -24,13 +24,17 @@ Atalhos: bindings efetivos do Hyprland, com origem e marcação de duplicados.
 
 Terminal: edição do `foot.ini` e prompt Oh My Posh.
 
+![Aba Compartilhar: IPs da máquina, porta livre em verde, itens para oferecer e destino](docs/img/compartilhar.png)
+
+Compartilhar: IPs de cada interface, porta testada de verdade, itens marcados para oferecer e IP e porta da outra pessoa.
+
 ![Aba Config: atalhos do programa e caminhos dos arquivos](docs/img/config.png)
 
 Config: todas as teclas do programa e os arquivos que ele usa.
 
 ## Recursos
 
-- 6 abas: Atalhos, Plugins, Temas, Config, Fundo e Terminal.
+- 7 abas: Atalhos, Plugins, Temas, Config, Fundo, Terminal e Compartilhar.
 - Atalhos: edição com captura da combinação, aviso de conflito, backup e
   desfazer; reverte sozinho se o Hyprland acusar erro.
 - Plugins: liga, desliga, desinstala (só de terceiros) e abre o repositório,
@@ -40,7 +44,7 @@ Config: todas as teclas do programa e os arquivos que ele usa.
 - Fundo: qualquer png, jpg ou webp como fundo, sem trocar de tema.
 - Terminal: opacidade, fonte, margem, cursor e histórico do Foot, mais o
   prompt Oh My Posh.
-- Compartilhar plugin ou tema com outro computador da mesma rede, por HTTPS.
+- Compartilhar plugins, temas, pastas e arquivos com outro computador da mesma rede, por HTTPS, com aprovação de cada conexão.
 - Teclado e mouse.
 
 ## Instalar (como plugin do Omarchy)
@@ -92,7 +96,7 @@ o compartilhamento na rede local.
 |---|---|
 | `Alt+L` / `Alt+→` | próxima aba (funciona de qualquer lugar, inclusive da pesquisa) |
 | `Alt+H` / `Alt+←` | aba anterior |
-| `1` a `6` | Atalhos, Plugins, Temas, Config, Fundo, Terminal (fora de um campo de texto) |
+| `1` a `7` | Atalhos, Plugins, Temas, Config, Fundo, Terminal, Compartilhar (fora de um campo de texto) |
 | `/` | pesquisar |
 | `j` `k` ou setas | navegar |
 | `Enter` | executar a ação em foco |
@@ -183,9 +187,45 @@ setas). O tema fica em `~/.config/omarchy-manager/` e o `~/.bashrc` ganha só
 um bloco entre marcadores, com backup. O botão de desligar remove o bloco.
 Precisa do binário `oh-my-posh` em `~/.local/bin`.
 
-### Compartilhar com outro computador da mesma rede
+### Aba Compartilhar
 
-Quem envia: `c` na aba Plugins (ou `Compartilhar` na aba Temas), depois
+Oferece plugins de terceiros, temas do usuário, pastas e arquivos a outra
+pessoa da mesma rede, ou lista e baixa o que ela oferece. Teclas: `Espaço`
+marca ou desmarca o item em foco, `p` e `f` adicionam uma pasta ou um
+arquivo pelo caminho, `o` liga ou desliga a oferta, `r` conecta ao IP e à
+porta da outra pessoa, `j`/`k` e `Ctrl+←`/`Ctrl+→` como nas outras abas.
+
+1. **Seus IPs.** Lista o IPv4 de cada interface (sem loopback), com o nome
+   dela, cabo e Wi-Fi primeiro. A linha em foco é o IP em que o programa
+   vai escutar.
+2. **Porta.** O campo faz um bind de teste no IP escolhido a cada tecla:
+   caixa verde se a porta está livre, vermelha se está ocupada, fora de 1 a
+   65535 ou sem permissão (abaixo de 1024). O verde e o vermelho são fixos,
+   porque em alguns temas o "verde" da paleta é avermelhado.
+3. **O que oferecer.** A lista traz os plugins de terceiros e os temas do
+   usuário, e recebe as pastas e arquivos que você adicionar. Nada vem
+   marcado e nada é exposto sem marcar. Pasta vira pacote com as mesmas
+   exclusões do `bundle.py` (`.git`, `*token*`, `*secret*`, `*credential*`,
+   chaves, `.env`, caches, logs). Arquivo com nome desse tipo é recusado.
+4. **Receber.** Digite o IP e a porta da outra pessoa. O programa mostra o
+   código de 6 palavras do certificado dela; confira com ela, que vê o mesmo
+   código no pedido de aprovação. Depois de aprovado, aparece a lista do que
+   ela oferece e você marca o que baixar.
+
+Salvaguardas: HTTPS com certificado criado para aquela oferta e
+fingerprint fixada pelo cliente; cada conexão só lista ou baixa algo depois
+de quem oferece aprovar, vendo o IP de quem conectou (60 segundos para
+responder, senão é recusada); a lista mostra só o marcado; a oferta vale 30
+minutos e some ao fechar o programa. Plugin e tema recebidos passam pela
+mesma revisão do `Receber` (manifesto, licença, executáveis) e só são
+instalados com um "sim": plugin desligado, tema sem ser aplicado. Pasta e
+arquivo recebidos vão para `~/Downloads/omarchy-manager/` sem permissão de
+execução, e se o nome já existe o programa pergunta antes de sobrescrever
+(o antigo vai para o backup). Nada recebido é executado.
+
+### Compartilhar plugin ou tema com `c`
+
+Também continua o diálogo de um item só. Quem envia: `c` na aba Plugins (ou `Compartilhar` na aba Temas), depois
 `Enviar na rede local`. Aparecem um código de 6 palavras, um convite em
 texto e o QR Code do convite. Quem recebe: aba Temas, botão `Receber`, cola
 o convite, confere se o código de 6 palavras é igual nos dois computadores e
@@ -233,7 +273,7 @@ Nada é gravado em `/usr/share/omarchy/`.
   então o programa pergunta ao Hyprland 4 vezes por segundo se o `Ctrl` está
   pressionado. Isso só foi testado com o estado do `Ctrl` simulado. Se não
   funcionar no seu teclado, a tecla `v` faz o mesmo de forma garantida.
-- Compartilhamento: testado com os dois lados no mesmo computador. A
+- Compartilhamento (diálogos e aba Compartilhar): testado com os dois lados no mesmo computador, em 127.0.0.1. A
   descoberta automática (mDNS) entre aparelhos diferentes e o comportamento
   em Wi-Fi com isolamento de clientes ainda não foram validados; colar o
   convite ou ler o QR não depende da descoberta.
