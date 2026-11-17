@@ -4,7 +4,7 @@ TUI em Python (Textual) para o Omarchy: edita atalhos do Hyprland, liga e
 desliga plugins do Omarchy Shell, troca temas e fundos e ajusta o terminal
 Foot, tudo em português do Brasil e nas cores do tema ativo.
 
-Versão 0.9.0. Testado com Omarchy 4.5 e Hyprland 0.56.2 (configuração Lua).
+Versão 0.9.1. Testado com Omarchy 4.5 e Hyprland 0.56.2 (configuração Lua).
 
 ## Capturas de tela
 
