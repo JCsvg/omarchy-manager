@@ -20,6 +20,10 @@ Plugins: estado, descrição em português, tipo, origem e versão.
 
 Atalhos: bindings efetivos do Hyprland, com origem e marcação de duplicados.
 
+![Aba Fundo: imagens de uma pasta com subpastas e prévia do arquivo em foco](docs/img/fundo.png)
+
+Fundo: lista as imagens da pasta escolhida, com subpasta e prévia, sem trocar de tema.
+
 ![Aba Terminal: opacidade, fonte, margem, cursor e prompt](docs/img/terminal.png)
 
 Terminal: edição do `foot.ini` e prompt Oh My Posh.
