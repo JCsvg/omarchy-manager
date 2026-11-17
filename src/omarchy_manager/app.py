@@ -9,7 +9,7 @@ import time
 from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.widgets import Footer, Header, TabbedContent, TabPane
+from textual.widgets import Button, Footer, Header, TabbedContent, TabPane
 
 from omarchy_manager import __version__
 from omarchy_manager.services import caminhos, terminal_foot, terminal_grafico
@@ -56,6 +56,9 @@ class OmarchyManagerApp(App[None]):
         Binding("6", "aba('terminal')", "Terminal", show=False),
         Binding("alt+l,alt+right", "aba_relativa(1)", "Próxima aba", key_display="Alt+L", priority=True),
         Binding("alt+h,alt+left", "aba_relativa(-1)", "Aba anterior", key_display="Alt+H", priority=True),
+        Binding("ctrl+right", "botao(1)", "Próximo botão", key_display="Ctrl+→", priority=True),
+        Binding("ctrl+left", "botao(-1)", "Botão anterior", key_display="Ctrl+←", priority=True),
+        Binding("ctrl+enter", "botao_acionar", "Apertar botão", key_display="Ctrl+Enter", priority=True),
         Binding("f5", "recarregar", "Recarregar"),
         Binding("slash", "buscar", "Pesquisar", key_display="/"),
     ]
@@ -171,6 +174,31 @@ class OmarchyManagerApp(App[None]):
         base = self._aba_alvo or abas.active
         atual = self.ORDEM_ABAS.index(base) if base in self.ORDEM_ABAS else 0
         self._ir_para_aba(self.ORDEM_ABAS[(atual + passo) % len(self.ORDEM_ABAS)])
+
+    def _botoes(self) -> list[Button]:
+        """Botões visíveis e ativos da tela atual (do diálogo, se houver; senão da aba ativa)."""
+        if len(self.screen_stack) > 1:
+            raiz = self.screen
+        else:
+            tipo = self.aba_ativa()
+            if tipo is None:
+                return []
+            raiz = self.query_one(tipo)
+        return [b for b in raiz.query(Button) if b.display and not b.disabled and b.region.area > 0]
+
+    def action_botao(self, passo: int) -> None:
+        botoes = self._botoes()
+        if not botoes:
+            return
+        atual = self.focused
+        if atual in botoes:
+            botoes[(botoes.index(atual) + passo) % len(botoes)].focus()
+        else:
+            botoes[0 if passo > 0 else -1].focus()
+
+    def action_botao_acionar(self) -> None:
+        if isinstance(self.focused, Button) and not self.focused.disabled:
+            self.focused.press()
 
     def focar_tabela(self) -> None:
         tipo = self.aba_ativa()

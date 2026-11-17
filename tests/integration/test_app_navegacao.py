@@ -238,3 +238,25 @@ async def test_abas_fundo_e_terminal_existem_e_abrem(app, tmp_path, monkeypatch)
         assert app.query_one(TabbedContent).active == "terminal"
         assert app.query_one("#term-fonte").value == "Fira Code"
         assert app.query_one("#term-margem").value == "5"
+
+
+async def test_ctrl_setas_andam_entre_botoes_e_ctrl_enter_aperta(app, tmp_path, monkeypatch):
+    from textual.widgets import Button
+
+    from omarchy_manager.services import terminal_cfg
+
+    monkeypatch.setattr(terminal_cfg, "arquivo_foot", lambda: tmp_path / "foot.ini")
+    async with app.run_test(size=(150, 45)) as pilot:
+        await _pronto(app, pilot)
+        await pilot.press("6")
+        await _pronto(app, pilot)
+        await pilot.press("ctrl+right")
+        assert isinstance(app.focused, Button) and app.focused.id == "term-aplicar"
+        await pilot.press("ctrl+right")
+        assert app.focused.id == "term-desfazer"
+        await pilot.press("ctrl+left", "ctrl+left")
+        assert app.focused.id == "term-prompt-restaurar"  # dá a volta
+        await pilot.press("ctrl+left", "ctrl+left", "ctrl+left")
+        await pilot.press("ctrl+enter")
+        await pilot.pause()
+        assert "foot.ini" in str(app.query_one("#term-status").render())
