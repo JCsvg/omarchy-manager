@@ -6,7 +6,7 @@
 # nada vem do AUR e nada é vendorizado. Ver DECISOES.md, seção 8.
 
 pkgname=omarchy-manager
-pkgver=0.7.0
+pkgver=0.8.0
 pkgrel=1
 pkgdesc="Gerenciador TUI de atalhos, plugins e temas do Omarchy"
 arch=('any')
