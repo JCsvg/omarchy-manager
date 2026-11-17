@@ -221,6 +221,7 @@ class AbaTemas(Vertical):
         Binding("j", "cursor_baixo", "Descer na lista", show=False),
         Binding("k", "cursor_cima", "Subir na lista", show=False),
         Binding("enter", "aplicar", "Aplicar o tema selecionado", show=False),
+        Binding("shift+enter", "aplicar_fundo", "Só o fundo, sem trocar o tema", key_display="Shift+Enter"),
         Binding("h,left", "fundo_relativo(-1)", "Fundo anterior", key_display="h/←"),
         Binding("l,right", "fundo_relativo(1)", "Próximo fundo (vira o padrão)", key_display="l/→"),
         Binding("p", "fundo_padrao", "Lista de fundos"),
@@ -767,6 +768,31 @@ class AbaTemas(Vertical):
             ),
             lambda ok: self._aplicar(t) if ok else None,
         )
+
+    def action_aplicar_fundo(self) -> None:
+        """Shift+Enter: usa só a imagem exibida do tema selecionado como fundo, sem trocar o tema."""
+        t = self.tema_selecionado()
+        if t is None:
+            return
+        if self.app.previa.ativa:
+            self.app.notify("Desligue a prévia ao vivo (v ou Esc) antes de aplicar só o fundo.", severity="warning")
+            return
+        imagem = self._imagem_para_previa(t)
+        if imagem is None:
+            self._status(f"{t.nome} não tem imagem de fundo.", "aviso")
+            return
+        self._aplicar_so_fundo(imagem)
+
+    @work(thread=True, exclusive=True, group="temas-fundo")
+    def _aplicar_so_fundo(self, imagem: Path) -> None:
+        resultado = self.app.omarchy.theme_bg_set(imagem)
+        self.app.call_from_thread(self._fundo_aplicado, imagem, resultado)
+
+    def _fundo_aplicado(self, imagem: Path, resultado) -> None:
+        if resultado.ok:
+            self.app.notify(f"Fundo trocado para {imagem.name}. O tema continua o mesmo.", timeout=5)
+        else:
+            self.app.notify(f"Não foi possível trocar o fundo: {resultado.erro_legivel}", severity="error", timeout=6)
 
     @work(thread=True, exclusive=True, group="temas-acao")
     def _aplicar(self, t: Tema) -> None:

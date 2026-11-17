@@ -107,7 +107,7 @@ setas esquerda e direita percorrem os fundos do tema em foco, e o fundo que
 estiver exibido passa a ser o padrão daquele tema, sem passo extra (a
 prévia mostra a posição, como "2 de 5"). Isso só guarda a escolha; nada
 muda na área de trabalho, a não ser com a prévia ao vivo ligada. `p` abre a
-lista de fundos, que também serve para tirar o padrão. `Enter` aplica o tema e a imagem padrão,
+lista de fundos, que também serve para tirar o padrão. `Shift+Enter` troca só o fundo para a imagem exibida, sem trocar o tema. `Enter` aplica o tema e a imagem padrão,
 depois de confirmar.
 
 Prévia ao vivo: `v` liga. Com ela ligada, o tema em foco na lista é aplicado

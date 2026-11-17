@@ -1,5 +1,7 @@
 """h/l e setas trocam o fundo exibido; o exibido vira o padrão, com debounce. Tudo em diretórios temporários."""
 
+from pathlib import Path
+
 import pytest
 from textual.widgets import DataTable, Input, Label, Static, TabbedContent
 
@@ -192,3 +194,16 @@ def test_atalhos_novos_na_aba_config():
     assert "Fundo anterior" in teclas[("Temas", "H / ←")]
     assert "Próximo fundo" in teclas[("Temas", "L / →")]
     assert ("Temas", "P") in teclas
+
+
+async def test_shift_enter_troca_so_o_fundo_sem_trocar_o_tema(app, executor):
+    async with app.run_test(size=(170, 45)) as pilot:
+        await _pronto(app, pilot)
+        await _ir(app, pilot, "signature")
+        await pilot.press("l")
+        await pilot.pause()
+        assert "b.png" in _info(app)
+        await pilot.press("shift+enter")
+        await _pronto(app, pilot)
+        assert [Path(c[4]).name for c in _bg(executor)] == ["b.png"]
+        assert not [c for c in executor.chamadas if c[:3] == ("omarchy", "theme", "set")]
