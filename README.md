@@ -32,6 +32,10 @@ Compartilhar: IPs de cada interface, porta testada de verdade, itens marcados pa
 
 Config: todas as teclas do programa e os arquivos que ele usa.
 
+![Painel de ajuda da aba (Ctrl+Espaço), com as teclas de navegação](docs/img/ajuda.png)
+
+Ctrl+Espaço abre as teclas da aba atual.
+
 ## Recursos
 
 - 7 abas: Atalhos, Plugins, Temas, Config, Fundo, Terminal e Compartilhar.
