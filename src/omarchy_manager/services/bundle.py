@@ -25,6 +25,7 @@ from omarchy_manager.services.log import logger
 
 VERSAO_FORMATO = 1
 EXTENSAO = ".omarchy-bundle"
+TIPOS = ("plugin", "tema", "pasta")  # "pasta" é só guardada em Downloads, nunca instalada
 LIMITE_TOTAL = 500 * 1024 * 1024
 LIMITE_ARQUIVO = 256 * 1024 * 1024
 LIMITE_QUANTIDADE = 10_000
@@ -52,7 +53,7 @@ class ArquivoBundle:
 
 @dataclass
 class Manifesto:
-    tipo: str  # plugin | tema
+    tipo: str  # plugin | tema | pasta
     id: str
     nome: str
     versao: str = ""
@@ -73,8 +74,8 @@ class Manifesto:
             d = json.loads(texto)
         except json.JSONDecodeError as exc:
             raise ErroBundle("bundle.json inválido") from exc
-        if not isinstance(d, dict) or d.get("tipo") not in ("plugin", "tema"):
-            raise ErroBundle("bundle.json sem tipo plugin/tema")
+        if not isinstance(d, dict) or d.get("tipo") not in TIPOS:
+            raise ErroBundle("bundle.json sem tipo plugin/tema/pasta")
         if not isinstance(d.get("id"), str) or not _id_seguro(d["id"]):
             raise ErroBundle("bundle.json com id inválido")
         arquivos = [ArquivoBundle(**a) for a in d.get("arquivos", []) if isinstance(a, dict)]
@@ -142,8 +143,8 @@ def sha256_arquivo(caminho: Path) -> str:
 def criar_bundle(tipo: str, ident: str, nome: str, pasta: Path, destino_dir: Path, *, versao: str = "", autor: str = "",
                  licenca: str = "", origem: str = "") -> tuple[Path, Manifesto, str]:
     """Gera `<destino_dir>/<id>.omarchy-bundle` e devolve (caminho, manifesto, sha256 do arquivo)."""
-    if tipo not in ("plugin", "tema"):
-        raise ErroBundle("tipo deve ser plugin ou tema")
+    if tipo not in TIPOS:
+        raise ErroBundle("tipo deve ser plugin, tema ou pasta")
     if not _id_seguro(ident):
         raise ErroBundle(f"id inválido: {ident!r}")
     raiz = pasta.resolve()
@@ -321,6 +322,8 @@ def instalar_recebido(pasta_temporaria: Path, manifesto: Manifesto, *, confirmad
     """Copia para ~/.config/omarchy/{plugins,themes}/<id>. Nunca liga nem aplica."""
     if not confirmado:
         raise ErroBundle("instalação exige confirmação explícita")
+    if manifesto.tipo not in ("plugin", "tema"):
+        raise ErroBundle("só plugin e tema podem ser instalados")
     raiz = (raiz_plugins or caminhos.OMARCHY_USER_PLUGINS) if manifesto.tipo == "plugin" else (raiz_temas or caminhos.OMARCHY_USER_THEMES)
     destino = caminhos.garantir_gravavel(raiz / manifesto.id)
     backup = None
