@@ -191,7 +191,7 @@ Precisa do binário `oh-my-posh` em `~/.local/bin`.
 
 Oferece plugins de terceiros, temas do usuário, pastas e arquivos a outra
 pessoa da mesma rede, ou lista e baixa o que ela oferece. Teclas: `Espaço`
-marca ou desmarca o item em foco, `p` e `f` adicionam uma pasta ou um
+ou `Enter` marca ou desmarca o item em foco, `p` e `f` adicionam uma pasta ou um
 arquivo pelo caminho, `o` liga ou desliga a oferta, `r` conecta ao IP e à
 porta da outra pessoa, `j`/`k` e `Ctrl+←`/`Ctrl+→` como nas outras abas.
 

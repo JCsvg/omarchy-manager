@@ -157,6 +157,29 @@ async def test_adicionar_pasta_e_arquivo_sensivel(app, tmp_path):
         assert tabela.row_count == 2 and aba.catalogo.itens() == []
 
 
+async def test_enter_marca_e_desmarca_item(app, tmp_path):
+    pasta = tmp_path / "minha-pasta"
+    pasta.mkdir()
+    (pasta / "x.txt").write_text("x")
+    async with app.run_test(size=(150, 60)) as pilot:
+        await _pronto(app, pilot)
+        aba = app.query_one(AbaCompartilhar)
+        await pilot.click("#comp-pasta")
+        d = await _esperar_tela(app, pilot, PedirCaminho)
+        d.query_one(Input).value = str(pasta)
+        await pilot.press("enter")
+        await _pronto(app, pilot)
+        tabela = aba.query_one("#comp-itens", DataTable)
+        tabela.focus()
+        tabela.move_cursor(row=1)
+        await pilot.press("enter")
+        assert tabela.get_row_at(1)[0] == "[x]"
+        assert [i.tipo for i in aba.catalogo.itens()] == ["pasta"]
+        await pilot.press("enter")
+        assert tabela.get_row_at(1)[0] == "[ ]"
+        assert aba.catalogo.itens() == []
+
+
 async def test_oferecer_exige_aprovacao_por_conexao(app, tmp_path):
     async with app.run_test(size=(150, 60)) as pilot:
         await _pronto(app, pilot)

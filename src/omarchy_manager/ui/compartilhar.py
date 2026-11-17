@@ -164,7 +164,7 @@ class AbaCompartilhar(VerticalScroll):
         with Horizontal(classes="linha"):
             yield Input(value=PORTA_PADRAO, id="comp-porta", restrict=r"[0-9]*", max_length=5)
             yield Static("", id="comp-porta-estado")
-        yield Static("3. O que oferecer (Espaço marca; nada sai sem marcar)", classes="secao")
+        yield Static("3. O que oferecer (Espaço ou Enter marca; nada sai sem marcar)", classes="secao")
         itens = DataTable(id="comp-itens", cursor_type="row", zebra_stripes=True)
         itens.add_columns("", "Tipo", "Nome", "Detalhe")
         itens.styles.height = 10
@@ -288,6 +288,12 @@ class AbaCompartilhar(VerticalScroll):
         estado.update(f"{motivo} em {ip}")
 
     # ------------------------------------------------------------ itens marcados
+
+    @on(DataTable.RowSelected, "#comp-itens")
+    def _enter_marca(self, ev: DataTable.RowSelected) -> None:
+        # O DataTable consome o Enter como RowSelected; sem isto só o Espaço marcava.
+        ev.stop()
+        self.action_marcar()
 
     def action_marcar(self) -> None:
         tabela = self.query_one("#comp-itens", DataTable)
