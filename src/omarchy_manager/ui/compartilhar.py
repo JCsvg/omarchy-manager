@@ -8,6 +8,7 @@ from __future__ import annotations
 import threading
 from pathlib import Path
 
+from rich.text import Text
 from textual import on, work
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -29,6 +30,11 @@ TIPOS = {"plugin": "plugin", "tema": "tema", "pasta": "pasta", "arquivo": "arqui
 
 def _tamanho(n: int) -> str:
     return f"{n / 1024 / 1024:.1f} MiB" if n >= 1024 * 1024 else f"{n / 1024:.0f} KiB"
+
+
+def _marca(marcado: bool) -> Text:
+    # Text evita que o Rich leia "[x]" como markup e engula o colchete
+    return Text("[x]" if marcado else "[ ]")
 
 
 class PedirCaminho(Dialogo):
@@ -94,7 +100,7 @@ class ListaRemota(Dialogo):
         super().on_mount()
         t = self.query_one("#remota", DataTable)
         for i in self._itens:
-            t.add_row("[ ]", i["tipo"], i["nome"], _tamanho(i["tamanho"]), key=i["id"])
+            t.add_row(_marca(False), i["tipo"], i["nome"], _tamanho(i["tamanho"]), key=i["id"])
 
     def action_marcar(self) -> None:
         t = self.query_one("#remota", DataTable)
@@ -102,7 +108,7 @@ class ListaRemota(Dialogo):
             return
         chave = self._itens[t.cursor_row]["id"]
         self._marcados ^= {chave}
-        t.update_cell(chave, t.ordered_columns[0].key, "[x]" if chave in self._marcados else "[ ]")
+        t.update_cell(chave, t.ordered_columns[0].key, _marca(chave in self._marcados))
 
     def on_button_pressed(self, ev: Button.Pressed) -> None:
         self.dismiss([i["id"] for i in self._itens if i["id"] in self._marcados] if ev.button.id == "ok" else None)
@@ -244,7 +250,7 @@ class AbaCompartilhar(NavegacaoMixin, VerticalScroll):
             tabela.move_cursor(row=min(cursor, len(self._linhas) - 1))
 
     def _linha(self, tabela: DataTable, chave: str, tipo: str, nome: str, detalhe: str) -> None:
-        tabela.add_row("[x]" if chave in self._marcados else "[ ]", tipo, nome, detalhe, key=chave)
+        tabela.add_row(_marca(chave in self._marcados), tipo, nome, detalhe, key=chave)
         self._linhas.append(chave)
 
     def _status(self, texto: str, classe: str = "ok") -> None:
@@ -331,7 +337,7 @@ class AbaCompartilhar(NavegacaoMixin, VerticalScroll):
             except ErroBundle as exc:
                 self._status(str(exc), "erro")
                 return
-        tabela.update_cell(chave, tabela.ordered_columns[0].key, "[x]" if chave in self._marcados else "[ ]")
+        tabela.update_cell(chave, tabela.ordered_columns[0].key, _marca(chave in self._marcados))
         self._status(f"{len(self._marcados)} item(ns) marcado(s).", "mudo")
 
     def _adicionar_ao_catalogo(self, chave: str):

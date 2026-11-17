@@ -5,6 +5,7 @@ import shutil
 import socket
 
 import pytest
+from textual.coordinate import Coordinate
 from textual.widgets import Button, DataTable, Input, Static, TabbedContent
 from textual.widgets._footer import FooterKey
 
@@ -96,7 +97,7 @@ async def test_tecla_7_ips_e_nenhum_item_marcado(app):
         aba = app.query_one(AbaCompartilhar)
         assert aba.query_one("#comp-ips", DataTable).get_row_at(0) == ["wlan0", "Wi-Fi", "127.0.0.1"]
         itens = aba.query_one("#comp-itens", DataTable)
-        assert itens.row_count == 1 and itens.get_row_at(0)[:3] == ["[ ]", "tema", "Meu Tema"]  # só tema do usuário
+        assert itens.row_count == 1 and itens.get_row_at(0)[1:3] == ["tema", "Meu Tema"] and itens.get_row_at(0)[0].plain == "[ ]"  # só tema do usuário
         assert aba.catalogo.itens() == []  # nada exposto por padrão
         await pilot.click("#comp-oferecer")
         await _pronto(app, pilot)
@@ -176,10 +177,10 @@ async def test_enter_marca_e_desmarca_item(app, tmp_path):
         tabela.focus()
         tabela.move_cursor(row=1)
         await pilot.press("enter")
-        assert tabela.get_row_at(1)[0] == "[x]"
+        assert tabela.get_cell_at(Coordinate(1, 0)).plain == "[x]"
         assert [i.tipo for i in aba.catalogo.itens()] == ["pasta"]
         await pilot.press("enter")
-        assert tabela.get_row_at(1)[0] == "[ ]"
+        assert tabela.get_cell_at(Coordinate(1, 0)).plain == "[ ]"
         assert aba.catalogo.itens() == []
 
 
