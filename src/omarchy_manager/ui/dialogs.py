@@ -166,6 +166,7 @@ TEXTO_AJUDA = """\
 [b]Navegação[/b]
   Tab / Shift+Tab   mudar o foco
   1 a 7             ir para uma aba (Atalhos ... Compartilhar)
+  8                 aba Webapps (só quando ativada na Config)
   ↑ ↓ ou j k        navegar na lista
   Enter             executar a ação em foco
   /                 pesquisar

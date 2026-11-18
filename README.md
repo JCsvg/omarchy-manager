@@ -42,7 +42,7 @@ Ctrl+Espaço abre as teclas da aba atual.
 
 ## Recursos
 
-- 7 abas: Atalhos, Plugins, Temas, Config, Fundo, Terminal e Compartilhar.
+- 8 abas: Atalhos, Plugins, Temas, Config, Fundo, Terminal, Compartilhar e Webapps (a última só aparece se ativada na Config).
 - Atalhos: edição com captura da combinação, aviso de conflito, backup e
   desfazer; reverte sozinho se o Hyprland acusar erro.
 - Plugins: liga, desliga, desinstala (só de terceiros) e abre o repositório,
@@ -53,7 +53,8 @@ Ctrl+Espaço abre as teclas da aba atual.
 - Terminal: opacidade, fonte, margem, cursor e histórico do Foot, mais o
   prompt Oh My Posh.
 - Compartilhar plugins, temas, pastas e arquivos com outro computador da mesma rede, por HTTPS, com aprovação de cada conexão.
-- Teclado e mouse.
+- Webapps: a conta do Chrome de cada web app do Omarchy, a conta padrão e cadastro de web apps novos.
+- Tudo funciona por mouse e por teclado: toda ação que tem tecla também tem botão ou item clicável na tela.
 
 ## Instalar (como plugin do Omarchy)
 
@@ -105,6 +106,8 @@ o compartilhamento na rede local.
 | `Alt+L` / `Alt+→` | próxima aba (funciona de qualquer lugar, inclusive da pesquisa) |
 | `Alt+H` / `Alt+←` | aba anterior |
 | `1` a `7` | Atalhos, Plugins, Temas, Config, Fundo, Terminal, Compartilhar (fora de um campo de texto) |
+| `8` | Webapps, só se a aba estiver ativada na Config (as teclas 1 a 7 não mudam nunca) |
+| `c` `s` `d` `a` `x` `i` | na aba Webapps: conta do web app, sem conta específica, conta padrão, adicionar, remover, instalar o wrapper |
 | `Ctrl+↓` / `Ctrl+j` | próximo campo ou seção (em todas as abas e diálogos) |
 | `Ctrl+↑` / `Ctrl+k` | campo ou seção anterior |
 | `Ctrl+→` / `Ctrl+l` | próximo botão da seção |
@@ -266,10 +269,65 @@ não passa por nenhum servidor na internet. Se a rede bloquear a conexão
 entre os aparelhos, use `Guardar como arquivo` e mande o arquivo por outro
 meio.
 
+### Aba Webapps
+
+![Aba Webapps: web apps do Omarchy, conta do Chrome de cada um e conta padrão](docs/img/webapps.png)
+
+Lista os web apps que você criou no Omarchy (os `.desktop` em
+`~/.local/share/applications` cujo `Exec` chama `omarchy-launch-webapp`) e a
+conta do Google Chrome em que cada um abre. Escolher a conta: `c` ou Enter na
+linha, ou o botão "Escolher conta" (também vale duplo clique, ou clique numa
+linha já marcada). A lista mostra "Nome (e-mail)" só das contas logadas, lidas
+do `Local State` do Chrome (`~/.config/google-chrome`) ou do Chromium
+(`~/.config/chromium`, quando é o navegador padrão). `s` ou "Sem conta
+específica" tira a conta daquele web app. `d` ou "Conta padrão" escolhe a conta
+dos web apps sem conta específica. `a` ou "Adicionar" pede nome, link e conta
+(opcional) e cria o web app com `omarchy-webapp-install`; nome vazio, repetido
+ou link que não seja http(s) são recusados. `x` ou "Remover" usa
+`omarchy-webapp-remove`, depois de confirmar.
+
+**Quando a aba aparece.** Por padrão fica desativada, a não ser que o navegador
+padrão (`omarchy-cmd-default-browser`, ou `xdg-settings`) seja `google-chrome*`
+ou `chromium*`. Na aba Config há a caixa "Ativar a aba Webapps"; o que você
+marcar vale sobre o padrão e fica em `~/.config/omarchy-manager/config.toml`:
+
+```toml
+[webapps]
+ativa = true
+```
+
+Aba desativada não aparece e a tecla `8` não faz nada. Como Webapps é a última
+aba, ativar ou desativar nunca muda a tecla das outras (1 a 7).
+
+**Como a conta é aplicada.** O mapeamento fica em
+`~/.config/omarchy-webapps/perfis.conf`, que a aba lê e grava (com backup,
+preservando comentários e linhas que ela não entende):
+
+```text
+# comentário
+docs.google.com = Profile 1     # domínio (sem "www.") = pasta do perfil
+default = Default               # conta padrão, para quem não tem domínio mapeado
+```
+
+Quem aplica é o wrapper `omarchy-launch-webapp` que vem no pacote
+(`/usr/share/omarchy-manager/omarchy-launch-webapp`) e que a aba instala em
+`~/.local/bin/`, antes do script do Omarchy no `PATH`: domínio mapeado abre com
+o perfil dele; senão, com `default`, se existir; senão o comportamento é o do
+Omarchy, sem nada mudar. Se o wrapper não está ativo, a aba avisa e o botão
+"Instalar wrapper" (`i`) pergunta antes; se já existir um arquivo diferente,
+mostra isso na pergunta e faz backup antes de trocar. Nada é gravado em `/usr`.
+
+Para testes e prints, `OMARCHY_MANAGER_CHROME_DIR` troca a pasta do navegador
+(a que tem o `Local State`); `OMARCHY_MANAGER_APPS_DIR`, `OMARCHY_MANAGER_PERFIS`
+e `OMARCHY_MANAGER_BIN_DIR` trocam a pasta dos `.desktop`, o `perfis.conf` e a
+pasta do wrapper; `OMARCHY_MANAGER_NAVEGADOR_PADRAO` finge o navegador padrão.
+
 ## Arquivos do usuário
 
 ```text
-~/.config/omarchy-manager/config.toml            imagem padrão por tema
+~/.config/omarchy-manager/config.toml            imagem padrão por tema, aba Webapps ativa ou não
+~/.config/omarchy-webapps/perfis.conf            conta do Chrome por web app e conta padrão
+~/.local/bin/omarchy-launch-webapp               wrapper que aplica a conta (instalado pela aba Webapps)
 ~/.config/omarchy-manager/plugin-shortcuts.toml  aliases plugin -> trecho de comando
 ~/.config/omarchy-manager/plugins-pt-BR.json     suas traduções de plugins
 ~/.config/hypr/omarchy-manager-bindings.lua      atalhos gerenciados (gerado)

@@ -55,7 +55,7 @@ def _focaveis(aba):
     return [w for w in aba.query("*") if eh_controle(w)]
 
 
-@pytest.mark.parametrize("aba_id", ["atalhos", "plugins", "temas", "config", "fundo", "terminal", "compartilhar"])
+@pytest.mark.parametrize("aba_id", ["atalhos", "plugins", "temas", "config", "fundo", "terminal", "compartilhar", "webapps"])
 async def test_toda_aba_alcancavel_so_com_o_esquema(app, aba_id):
     async with app.run_test(size=(160, 60)) as pilot:
         await _pronto(app, pilot)

@@ -27,7 +27,7 @@ COMUM = """[b]Navegação (igual em todas as abas)[/b]
   Ctrl+Enter           aperta o botão
   Esc                  volta para a lista
   Alt+H / Alt+L        aba anterior / próxima
-  1 a 7                ir para a aba"""
+  1 a 8                ir para a aba (8 só com Webapps ativa)"""
 FINAL = """[b]Geral[/b]
   F5                   recarregar
   ?                    ajuda completa
@@ -38,7 +38,7 @@ def eh_controle(w: Widget) -> bool:
     """Focável de verdade: fora painéis de rolagem (focáveis só para rolar) e o miolo do Select."""
     if not w.focusable:
         return False
-    if isinstance(w, ScrollableContainer) and not isinstance(w, (DataTable, OptionList)):
+    if isinstance(w, ScrollableContainer) and not isinstance(w, (DataTable, OptionList, Input)):
         return False
     return not any(isinstance(a, Select) for a in w.ancestors)
 

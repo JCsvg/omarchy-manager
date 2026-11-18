@@ -13,6 +13,7 @@ from textual.widgets import Button, Header, TabbedContent, TabPane
 
 from omarchy_manager import __version__
 from omarchy_manager.services import caminhos, terminal_foot, terminal_grafico
+from omarchy_manager.services import webapps as webapps_servico
 from omarchy_manager.services.ai_launcher import AiLauncher
 from omarchy_manager.services.hyprland import HyprlandService
 from omarchy_manager.services.log import configurar_log, logger
@@ -32,6 +33,7 @@ from omarchy_manager.ui.imagem import ImagemTerminal
 from omarchy_manager.ui.plugins import AbaPlugins
 from omarchy_manager.ui.shortcuts import AbaAtalhos
 from omarchy_manager.ui.terminal import AbaTerminal
+from omarchy_manager.ui.webapps import AbaWebapps
 from omarchy_manager.ui.themes import AbaTemas
 
 
@@ -57,6 +59,7 @@ class OmarchyManagerApp(App[None]):
         Binding("5", "aba('fundo')", "Fundo", show=False),
         Binding("6", "aba('terminal')", "Terminal", show=False),
         Binding("7", "aba('compartilhar')", "Compartilhar", show=False),
+        Binding("8", "aba('webapps')", "Webapps", show=False),
         Binding("alt+l,alt+right", "aba_relativa(1)", "Próxima aba", key_display="Alt+L", priority=True),
         Binding("alt+h,alt+left", "aba_relativa(-1)", "Aba anterior", key_display="Alt+H", priority=True),
         Binding("ctrl+right,ctrl+l", "botao(1)", "Próximo botão", key_display="Ctrl+→", priority=True),
@@ -91,9 +94,10 @@ class OmarchyManagerApp(App[None]):
         self.captura = captura or CapturaHyprland(self.hyprland)
         self.ia = ia or AiLauncher()
         self.previa = previa or PreviaAoVivo(self.omarchy)
+        self.webapps_ativa = webapps_servico.aba_ativa()
         self._aba_alvo = ""
         self._aba_alvo_em = 0.0
-        self.aba_inicial = aba_inicial if aba_inicial in self.ORDEM_ABAS else "plugins"
+        self.aba_inicial = aba_inicial if aba_inicial in self.ORDEM_ABAS[:-1] or (aba_inicial == "webapps" and self.webapps_ativa) else "plugins"
         self.deteccao = self.omarchy.detectar()
 
     def compose(self) -> ComposeResult:
@@ -113,10 +117,14 @@ class OmarchyManagerApp(App[None]):
                 yield AbaTerminal()
             with TabPane("Compartilhar", id="compartilhar"):
                 yield AbaCompartilhar()
+            with TabPane("Webapps", id="webapps"):
+                yield AbaWebapps()
         yield RodapeEnxuto()
 
     def on_mount(self) -> None:
         self.aplicar_paleta()
+        if not self.webapps_ativa:
+            self.query_one("#abas", TabbedContent).hide_tab("webapps")
         self.sub_title = self.deteccao.mensagem
         self.call_after_refresh(self.focar_tabela)
         if not self.deteccao.omarchy:
@@ -189,12 +197,29 @@ class OmarchyManagerApp(App[None]):
 
     def aba_ativa(self):
         abas = self.query_one("#abas", TabbedContent)
-        return {"atalhos": AbaAtalhos, "plugins": AbaPlugins, "temas": AbaTemas, "config": AbaConfig, "fundo": AbaFundo, "terminal": AbaTerminal, "compartilhar": AbaCompartilhar}.get(abas.active)
+        return {"atalhos": AbaAtalhos, "plugins": AbaPlugins, "temas": AbaTemas, "config": AbaConfig, "fundo": AbaFundo, "terminal": AbaTerminal, "compartilhar": AbaCompartilhar, "webapps": AbaWebapps}.get(abas.active)
 
-    ORDEM_ABAS = ("atalhos", "plugins", "temas", "config", "fundo", "terminal", "compartilhar")
+    ORDEM_ABAS = ("atalhos", "plugins", "temas", "config", "fundo", "terminal", "compartilhar", "webapps")
+
+    def abas_visiveis(self) -> tuple[str, ...]:
+        """Webapps é a última aba (tecla 8): oculta, não renumera nenhuma das outras."""
+        return self.ORDEM_ABAS if self.webapps_ativa else self.ORDEM_ABAS[:-1]
+
+    def aplicar_aba_webapps(self, ativa: bool) -> None:
+        """Mostra ou esconde a aba Webapps. Escondida com ela aberta, volta para a Config."""
+        self.webapps_ativa = ativa
+        abas = self.query_one("#abas", TabbedContent)
+        if ativa:
+            abas.show_tab("webapps")
+        else:
+            if abas.active == "webapps":
+                self._ir_para_aba("config")
+            abas.hide_tab("webapps")
 
     def action_aba(self, aba: str) -> None:
         if len(self.screen_stack) > 1:  # diálogo aberto: não troca por baixo dele
+            return
+        if aba not in self.abas_visiveis():
             return
         self._ir_para_aba(aba)
 
@@ -211,8 +236,9 @@ class OmarchyManagerApp(App[None]):
             return
         abas = self.query_one("#abas", TabbedContent)
         base = self._aba_alvo or abas.active
-        atual = self.ORDEM_ABAS.index(base) if base in self.ORDEM_ABAS else 0
-        self._ir_para_aba(self.ORDEM_ABAS[(atual + passo) % len(self.ORDEM_ABAS)])
+        ordem = self.abas_visiveis()
+        atual = ordem.index(base) if base in ordem else 0
+        self._ir_para_aba(ordem[(atual + passo) % len(ordem)])
 
     def _botoes(self) -> list[Button]:
         """Botões visíveis e ativos da tela atual (do diálogo, se houver; senão da aba ativa)."""
@@ -281,7 +307,7 @@ class OmarchyManagerApp(App[None]):
     def action_recarregar(self) -> None:
         self.aplicar_paleta()
         aba = self.query_one("#abas", TabbedContent).active
-        for widget in self.query("AbaAtalhos, AbaPlugins, AbaTemas, AbaFundo, AbaTerminal, AbaCompartilhar"):
+        for widget in self.query("AbaAtalhos, AbaPlugins, AbaTemas, AbaFundo, AbaTerminal, AbaCompartilhar, AbaWebapps"):
             recarregar = getattr(widget, "recarregar", None)
             if recarregar is not None:
                 recarregar()

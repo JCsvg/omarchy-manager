@@ -553,3 +553,19 @@ Não validado: 2 máquinas reais (mDNS não é usado nesta aba), Wi-Fi com
 isolamento de clientes, IPv6 (a aba só lista IPv4), firewall bloqueando a
 porta escolhida (o teste de bind prova que dá para escutar, não que o outro
 computador alcança).
+
+
+## 17. Aba Webapps (versão 0.10.0)
+
+Decisões do agente que implementou (o JC não escolheu estas, pode mudar):
+
+- **Teclas das abas.** Webapps é a oitava e última aba (tecla `8`). Oculta, não renumera nenhuma outra (1 a 7 ficam como estavam) e a tecla `8` e o Alt+L/Alt+H a ignoram. Foi a regra mais simples que mantém as teclas coerentes.
+- **Ativação.** Sem escolha gravada, ativa só se o navegador padrão é `google-chrome*` ou `chromium*`. A escolha vai em `[webapps] ativa` do `config.toml` e vale sobre o padrão, nos dois sentidos. Desativar com a aba aberta volta para a Config.
+- **Conta padrão.** Linha `default = <pasta>` no mesmo `perfis.conf`. O wrapper empacotado estende o do JC: domínio mapeado, depois `default`, depois o comportamento original. Sem `default` nada muda. O wrapper antigo do JC (que não conhece `default`) é reconhecido como "antigo" e a aba oferece atualizar, com backup, em vez de duplicar. A marca `# omarchy-manager-wrapper: 2` identifica a versão.
+- **Instalar o wrapper.** Só em `~/.local/bin`, sempre com confirmação, com backup se já existe algo. O pacote traz a cópia em `/usr/share/omarchy-manager/`; a aba usa a cópia dentro do módulo Python (`data/`), então também funciona instalada como plugin.
+- **Criar e remover.** Reusa `omarchy-webapp-install` (ícone vazio faz o Omarchy buscar o do site) e, se o comando falha ou não existe, grava um `.desktop` no mesmo formato. Remover usa `omarchy-webapp-remove <nome>` (acha o arquivo pelo nome, apaga só ele e o ícone), com confirmação; a conta do domínio fica no `perfis.conf`, porque outro web app pode usar o mesmo domínio. Com `OMARCHY_MANAGER_APPS_DIR` definida os dois trabalham direto nessa pasta, para não tocar a real.
+- **Contas.** Lidas do `Local State` (`profile.info_cache`), só com `user_name` preenchido. Um perfil já mapeado que não está logado aparece com o nome da pasta.
+
+### Regra do app: tudo por mouse e por teclado
+
+Toda ação precisa ser alcançável pelos dois. Se existe tecla, existe botão, linha ou campo clicável equivalente na tela, e o rodapé (clicável) mostra as teclas da zona. Auditoria feita na 0.10.0: faltavam botões em Temas (fundo anterior e próximo, só o fundo, prévia ao vivo) e em Compartilhar (marcar item, na lista de oferta e na lista remota); foram acrescentados. Os `Input` eram ignorados pela navegação Ctrl+j/k (no Textual 8 o `Input` herda de `ScrollableContainer`); agora entram como zonas.

@@ -7,9 +7,11 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical
-from textual.widgets import DataTable, Static
+from textual import on
+from textual.widgets import Checkbox, DataTable, Static
 
 from omarchy_manager.services import caminhos
+from omarchy_manager.services import webapps as webapps_svc
 from omarchy_manager.ui.navegacao import NavegacaoMixin
 
 NOMES_TECLA = {
@@ -62,10 +64,11 @@ def todos_os_atalhos() -> list[tuple[str, str, str]]:
     from omarchy_manager.ui.compartilhar import AbaCompartilhar
     from omarchy_manager.ui.shortcuts import AbaAtalhos
     from omarchy_manager.ui.themes import AbaTemas
+    from omarchy_manager.ui.webapps import AbaWebapps
 
     linhas = linhas_de_bindings("Global", OmarchyManagerApp.BINDINGS)
     linhas += [f for f in FIXOS if f[0] == "Global"]
-    for contexto, classe in (("Atalhos", AbaAtalhos), ("Plugins", AbaPlugins), ("Temas", AbaTemas), ("Compartilhar", AbaCompartilhar)):
+    for contexto, classe in (("Atalhos", AbaAtalhos), ("Plugins", AbaPlugins), ("Temas", AbaTemas), ("Compartilhar", AbaCompartilhar), ("Webapps", AbaWebapps)):
         linhas += linhas_de_bindings(contexto, classe.BINDINGS)
         linhas += [f for f in FIXOS if f[0].startswith(contexto)]
     linhas += [f for f in FIXOS if f[0] == "Diálogos"]
@@ -93,6 +96,8 @@ class AbaConfig(NavegacaoMixin, Vertical):
     AbaConfig { height: 1fr; }
     #config-titulo { color: $accent; text-style: bold; height: 1; }
     #config-tabela { height: 1fr; }
+    #config-webapps { height: 3; }
+    #config-webapps-dica { color: $text-muted; height: auto; }
     #config-caminhos-titulo { color: $accent; text-style: bold; height: 1; margin-top: 1; }
     #config-caminhos { height: auto; color: $text-muted; }
     """
@@ -108,16 +113,37 @@ class AbaConfig(NavegacaoMixin, Vertical):
         tabela = DataTable(id="config-tabela", cursor_type="row", zebra_stripes=True)
         tabela.add_columns("Onde", "Tecla", "O que faz")
         yield tabela
+        yield Checkbox("Ativar a aba Webapps (tecla 8)", id="config-webapps", value=self.app.webapps_ativa)
+        yield Static("", id="config-webapps-dica")
         yield Static("Arquivos de configuração e estado", id="config-caminhos-titulo")
         yield Static(caminhos_legiveis(), id="config-caminhos")
 
     def on_mount(self) -> None:
+        self._dica_webapps()
         tabela = self.query_one("#config-tabela", DataTable)
         for linha in todos_os_atalhos():
             tabela.add_row(*linha)
 
     def recarregar(self) -> None:
         pass
+
+    @on(Checkbox.Changed, "#config-webapps")
+    def _webapps_mudou(self, ev: Checkbox.Changed) -> None:
+        if ev.value == self.app.webapps_ativa:
+            return
+        try:
+            webapps_svc.definir_aba_ativa(ev.value)
+        except OSError as exc:
+            self.query_one("#config-webapps-dica", Static).update(f"Não foi possível gravar: {exc}")
+            return
+        self.app.aplicar_aba_webapps(ev.value)
+        self._dica_webapps()
+
+    def _dica_webapps(self) -> None:
+        navegador = webapps_svc.navegador_padrao() or "desconhecido"
+        self.query_one("#config-webapps-dica", Static).update(
+            f"Padrão: ativa só se o navegador padrão for Chrome ou Chromium (o seu: {navegador}). Sua escolha fica em {caminhos.CONFIG_TOML}."
+        )
 
     def action_buscar(self) -> None:
         pass
