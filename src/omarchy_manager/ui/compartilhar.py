@@ -95,6 +95,7 @@ class ListaRemota(Dialogo):
             with Horizontal(id="botoes"):
                 yield Button("Cancelar", id="cancelar")
                 yield Button("Baixar marcados", id="ok", variant="primary")
+                yield Button("Marcar ou desmarcar", id="marcar")
 
     def on_mount(self) -> None:
         super().on_mount()
@@ -110,7 +111,14 @@ class ListaRemota(Dialogo):
         self._marcados ^= {chave}
         t.update_cell(chave, t.ordered_columns[0].key, _marca(chave in self._marcados))
 
+    @on(DataTable.RowSelected, "#remota")
+    def _linha_escolhida(self) -> None:
+        self.action_marcar()  # Enter ou segundo clique na linha
+
     def on_button_pressed(self, ev: Button.Pressed) -> None:
+        if ev.button.id == "marcar":
+            self.action_marcar()
+            return
         self.dismiss([i["id"] for i in self._itens if i["id"] in self._marcados] if ev.button.id == "ok" else None)
 
     def action_cancelar(self) -> None:
@@ -137,7 +145,7 @@ class AbaCompartilhar(NavegacaoMixin, VerticalScroll):
     AbaCompartilhar #comp-oferta-info { height: auto; color: $success; }
     AbaCompartilhar #comp-status { height: auto; margin-top: 1; }
     """
-    SECOES = (("#comp-ips",), ("#comp-porta",), ("#comp-itens", "#comp-pasta", "#comp-arquivo", "#comp-oferecer"),
+    SECOES = (("#comp-ips",), ("#comp-porta",), ("#comp-itens", "#comp-pasta", "#comp-arquivo", "#comp-oferecer", "#comp-marcar"),
               ("#comp-dest-ip", "#comp-dest-porta", "#comp-receber"))
     TITULO_AJUDA = "Compartilhar"
     AJUDA = COMUM + """
@@ -191,6 +199,7 @@ class AbaCompartilhar(NavegacaoMixin, VerticalScroll):
             yield Button("Adicionar pasta", id="comp-pasta")
             yield Button("Adicionar arquivo", id="comp-arquivo")
             yield Button("Oferecer", id="comp-oferecer", variant="primary")
+            yield Button("Marcar ou desmarcar", id="comp-marcar")
         yield Static("", id="comp-oferta-info")
         yield Static("4. Receber de outra pessoa", classes="secao")
         with Horizontal(classes="linha"):
@@ -324,9 +333,17 @@ class AbaCompartilhar(NavegacaoMixin, VerticalScroll):
         ev.stop()
         self.action_marcar()
 
+    @on(Button.Pressed, "#comp-marcar")
+    def _btn_marcar(self) -> None:
+        self._marcar_linha()
+
     def action_marcar(self) -> None:
+        if self.app.focused is self.query_one("#comp-itens", DataTable):
+            self._marcar_linha()
+
+    def _marcar_linha(self) -> None:
         tabela = self.query_one("#comp-itens", DataTable)
-        if self.app.focused is not tabela or not self._linhas:
+        if not self._linhas:
             return
         chave = self._linhas[tabela.cursor_row]
         if chave in self._marcados:

@@ -214,7 +214,8 @@ class AbaTemas(NavegacaoMixin, Vertical):
     #previa-modo { height: 1; }
     #previa-modo.ligada { color: $warning; text-style: bold; }
     #temas-acoes { height: 3; }
-    #temas-acoes Button { margin-right: 1; min-width: 12; }
+    #temas-acoes Button, #temas-acoes2 Button { margin-right: 1; min-width: 12; }
+    #temas-acoes2 { height: 3; }
     #temas-status { height: 1; color: $text-muted; }
     """
     TITULO_AJUDA = "Temas"
@@ -276,6 +277,11 @@ class AbaTemas(NavegacaoMixin, Vertical):
             yield Button("Compartilhar", id="btn-compartilhar-tema")
             yield Button("Receber", id="btn-receber")
             yield Button("Atualizar", id="btn-atualizar-temas")
+        with Horizontal(id="temas-acoes2"):  # o que as teclas h/l, Shift+Enter e v fazem, também por clique
+            yield Button("◀ Fundo anterior", id="btn-fundo-ant")
+            yield Button("Próximo fundo ▶", id="btn-fundo-prox")
+            yield Button("Só o fundo", id="btn-so-fundo")
+            yield Button("Prévia ao vivo", id="btn-previa")
         yield Label(TEXTO_PREVIA_DESLIGADA, id="previa-modo")
         yield Label("", id="temas-status")
 
@@ -682,6 +688,22 @@ class AbaTemas(NavegacaoMixin, Vertical):
         rotulo = self.query_one("#temas-status", Label)
         rotulo.update(texto)
         rotulo.set_classes(classe)
+
+    @on(Button.Pressed, "#btn-fundo-ant")
+    def _btn_fundo_ant(self) -> None:
+        self.action_fundo_relativo(-1)
+
+    @on(Button.Pressed, "#btn-fundo-prox")
+    def _btn_fundo_prox(self) -> None:
+        self.action_fundo_relativo(1)
+
+    @on(Button.Pressed, "#btn-so-fundo")
+    def _btn_so_fundo(self) -> None:
+        self.action_aplicar_fundo()
+
+    @on(Button.Pressed, "#btn-previa")
+    def _btn_previa(self) -> None:
+        self.action_alternar_previa()
 
     @on(Button.Pressed, "#btn-atualizar-temas")
     def _btn_atualizar(self) -> None:
