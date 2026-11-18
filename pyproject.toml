@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "omarchy-manager"
-version = "0.10.1"
+version = "0.10.2"
 description = "Gerenciador TUI de atalhos, plugins e temas do Omarchy"
 readme = "README.md"
 requires-python = ">=3.13"
