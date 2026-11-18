@@ -578,3 +578,11 @@ Decisões do agente que implementou (o JC não escolheu estas, pode mudar):
 - **Marcador.** `$XDG_RUNTIME_DIR/omarchy-manager/abertura-mostrada`, pasta 0700. Ausente, corrompido ou ilegível vale como "não mostrei". Sem `XDG_RUNTIME_DIR`, a abertura aparece sempre e nada é gravado. Opção desligada não grava marcador.
 - **Opção.** `[abertura] mostrar` no `config.toml` (padrão ligada), caixa na aba Config.
 - **Testes.** Fixture autouse no conftest aponta `XDG_RUNTIME_DIR` para uma pasta de teste com o marcador já gravado, então os testes antigos não veem a abertura e o marcador real do JC nunca é tocado.
+
+## Memória (revisão preventiva, sem mudança de comportamento)
+
+Medição sob o pilot do Textual (VmRSS), 30 voltas de uso: trocar as abas e abrir e fechar a ajuda de cada uma. Antes: 98 MB aquecido e 298 MB depois do uso. Depois: 84 MB aquecido e 133 MB depois do uso, com o crescimento já achatando (caches internos do Textual, nenhum widget acumulando).
+
+- Causa: o `RodapeEnxuto` recompõe a cada troca de aba e o `data_bind` do `FooterKey` (igual no rodapé padrão do Textual) mantém cada tecla antiga viva. Agora o rodapé define `compact` direto e desfaz o vínculo no ramo do rodapé padrão (diálogos).
+- Já estava certo: timers da aba Temas e do Compartilhar só agem com a aba ativa ou oferta aberta, e são baratos.
+- Teste `tests/integration/test_memoria.py`: falha se o RSS pós-uso passar de 220 MB ou crescer mais de 90 MB depois do aquecimento.

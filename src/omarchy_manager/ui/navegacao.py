@@ -186,7 +186,12 @@ class RodapeEnxuto(Footer):
         except Exception:
             aba = None
         if aba is None:
-            yield from super().compose()
+            for w in super().compose():
+                # o data_bind do Footer padrão prende cada FooterKey antigo (vazamento a cada recomposição)
+                if isinstance(w, FooterKey) and getattr(w, "_reactive_connect", None):
+                    w._reactive_connect = None
+                    w.set_reactive(FooterKey.compact, self.compact)
+                yield w
             return
         if not self._bindings_ready:
             return
@@ -199,5 +204,8 @@ class RodapeEnxuto(Footer):
         ordem = [vistos[n] for n in permitidas if n in vistos]
         self.styles.grid_size_columns = len(ordem)
         for b, enabled, tooltip in ordem:
-            yield FooterKey(b.key, self.app.get_key_display(b), b.description, b.action,
-                            disabled=not enabled, tooltip=tooltip).data_bind(compact=Footer.compact)
+            tecla = FooterKey(b.key, self.app.get_key_display(b), b.description, b.action,
+                              disabled=not enabled, tooltip=tooltip)
+            # sem data_bind: ele prende cada FooterKey antigo no rodapé (vazamento a cada recomposição)
+            tecla.set_reactive(FooterKey.compact, self.compact)
+            yield tecla
