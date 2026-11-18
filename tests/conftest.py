@@ -51,3 +51,12 @@ def _ambiente_isolado(tmp_path_factory, monkeypatch):
     monkeypatch.setenv("OMARCHY_MANAGER_NAVEGADOR_PADRAO", "firefox.desktop")
     monkeypatch.setattr(caminhos, "CONFIG_TOML", raiz / "config.toml")
     monkeypatch.setattr(caminhos, "BACKUPS_DIR", raiz / "backups")
+
+
+@pytest.fixture(autouse=True)
+def _sem_abertura(tmp_path_factory, monkeypatch):
+    """Testes antigos não dependem da abertura: runtime dir de teste com o marcador já gravado."""
+    pasta = tmp_path_factory.mktemp("runtime")
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(pasta))
+    (pasta / "omarchy-manager").mkdir()
+    (pasta / "omarchy-manager" / "abertura-mostrada").write_text("1\n")

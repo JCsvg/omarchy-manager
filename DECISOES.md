@@ -569,3 +569,12 @@ Decisões do agente que implementou (o JC não escolheu estas, pode mudar):
 ### Regra do app: tudo por mouse e por teclado
 
 Toda ação precisa ser alcançável pelos dois. Se existe tecla, existe botão, linha ou campo clicável equivalente na tela, e o rodapé (clicável) mostra as teclas da zona. Auditoria feita na 0.10.0: faltavam botões em Temas (fundo anterior e próximo, só o fundo, prévia ao vivo) e em Compartilhar (marcar item, na lista de oferta e na lista remota); foram acrescentados. Os `Input` eram ignorados pela navegação Ctrl+j/k (no Textual 8 o `Input` herda de `ScrollableContainer`); agora entram como zonas.
+
+## 18. Abertura (versão 0.10.1)
+
+Decisões do agente que implementou (o JC não escolheu estas, pode mudar):
+
+- **Modelo.** Igual ao oma-docker: tela modal com o nome em letras de blocos, 1,5 s, tecla ou clique. Adaptada: 15 colunas de letras (OMARCHY MANAGER) em 89 colunas, duas linhas (41 colunas, 11 linhas) abaixo disso, texto simples em terminal pequeno. 80x24 usa duas linhas; 120x30 e 200x50, uma.
+- **Marcador.** `$XDG_RUNTIME_DIR/omarchy-manager/abertura-mostrada`, pasta 0700. Ausente, corrompido ou ilegível vale como "não mostrei". Sem `XDG_RUNTIME_DIR`, a abertura aparece sempre e nada é gravado. Opção desligada não grava marcador.
+- **Opção.** `[abertura] mostrar` no `config.toml` (padrão ligada), caixa na aba Config.
+- **Testes.** Fixture autouse no conftest aponta `XDG_RUNTIME_DIR` para uma pasta de teste com o marcador já gravado, então os testes antigos não veem a abertura e o marcador real do JC nunca é tocado.

@@ -10,6 +10,7 @@ from textual.containers import Vertical
 from textual import on
 from textual.widgets import Checkbox, DataTable, Static
 
+from omarchy_manager.services import abertura as abertura_svc
 from omarchy_manager.services import caminhos
 from omarchy_manager.services import webapps as webapps_svc
 from omarchy_manager.ui.navegacao import NavegacaoMixin
@@ -97,6 +98,7 @@ class AbaConfig(NavegacaoMixin, Vertical):
     #config-titulo { color: $accent; text-style: bold; height: 1; }
     #config-tabela { height: 1fr; }
     #config-webapps { height: 3; }
+    #config-abertura { height: 3; }
     #config-webapps-dica { color: $text-muted; height: auto; }
     #config-caminhos-titulo { color: $accent; text-style: bold; height: 1; margin-top: 1; }
     #config-caminhos { height: auto; color: $text-muted; }
@@ -115,6 +117,7 @@ class AbaConfig(NavegacaoMixin, Vertical):
         yield tabela
         yield Checkbox("Ativar a aba Webapps (tecla 8)", id="config-webapps", value=self.app.webapps_ativa)
         yield Static("", id="config-webapps-dica")
+        yield Checkbox("Mostrar a abertura (uma vez por boot)", id="config-abertura", value=abertura_svc.abertura_ativa())
         yield Static("Arquivos de configuração e estado", id="config-caminhos-titulo")
         yield Static(caminhos_legiveis(), id="config-caminhos")
 
@@ -138,6 +141,15 @@ class AbaConfig(NavegacaoMixin, Vertical):
             return
         self.app.aplicar_aba_webapps(ev.value)
         self._dica_webapps()
+
+    @on(Checkbox.Changed, "#config-abertura")
+    def _abertura_mudou(self, ev: Checkbox.Changed) -> None:
+        if ev.value == abertura_svc.abertura_ativa():
+            return
+        try:
+            abertura_svc.definir_abertura_ativa(ev.value)
+        except OSError as exc:
+            self.query_one("#config-webapps-dica", Static).update(f"Não foi possível gravar: {exc}")
 
     def _dica_webapps(self) -> None:
         navegador = webapps_svc.navegador_padrao() or "desconhecido"

@@ -269,6 +269,24 @@ não passa por nenhum servidor na internet. Se a rede bloquear a conexão
 entre os aparelhos, use `Guardar como arquivo` e mande o arquivo por outro
 meio.
 
+### Abertura
+
+![Abertura: OMARCHY MANAGER em letras grandes](docs/img/abertura.png)
+
+Na primeira vez que o app abre em cada boot, aparece o nome em letras grandes
+nas cores do tema. Qualquer tecla, um clique ou 1,5 segundo levam à aba
+inicial. Nas aberturas seguintes, no mesmo boot, ela não aparece. O marcador
+fica em `$XDG_RUNTIME_DIR/omarchy-manager/` (some ao desligar) e não guarda
+dado nenhum. Em terminal pequeno o nome vem em duas linhas e, num muito
+pequeno, em uma linha simples. Para desligar, desmarque "Mostrar a abertura"
+na aba Config (por clique ou Espaço); a escolha fica em
+`~/.config/omarchy-manager/config.toml`:
+
+```toml
+[abertura]
+mostrar = false
+```
+
 ### Aba Webapps
 
 ![Aba Webapps: web apps do Omarchy, conta do Chrome de cada um e conta padrão](docs/img/webapps.png)
@@ -325,7 +343,7 @@ pasta do wrapper; `OMARCHY_MANAGER_NAVEGADOR_PADRAO` finge o navegador padrão.
 ## Arquivos do usuário
 
 ```text
-~/.config/omarchy-manager/config.toml            imagem padrão por tema, aba Webapps ativa ou não
+~/.config/omarchy-manager/config.toml            imagem padrão por tema, aba Webapps ativa ou não, abertura ligada ou não
 ~/.config/omarchy-webapps/perfis.conf            conta do Chrome por web app e conta padrão
 ~/.local/bin/omarchy-launch-webapp               wrapper que aplica a conta (instalado pela aba Webapps)
 ~/.config/omarchy-manager/plugin-shortcuts.toml  aliases plugin -> trecho de comando

@@ -12,6 +12,7 @@ from textual.binding import Binding
 from textual.widgets import Button, Header, TabbedContent, TabPane
 
 from omarchy_manager import __version__
+from omarchy_manager.services import abertura as abertura_svc
 from omarchy_manager.services import caminhos, terminal_foot, terminal_grafico
 from omarchy_manager.services import webapps as webapps_servico
 from omarchy_manager.services.ai_launcher import AiLauncher
@@ -24,6 +25,7 @@ from omarchy_manager.services.paleta import paleta_atual, tema_textual
 from omarchy_manager.services.plugin_catalog import PluginCatalog
 from omarchy_manager.services.temas import ThemeService
 from omarchy_manager.services.previa_ao_vivo import PreviaAoVivo
+from omarchy_manager.ui.abertura import Abertura
 from omarchy_manager.ui.compartilhar import AbaCompartilhar
 from omarchy_manager.ui.navegacao import AjudaAba, RodapeEnxuto
 from omarchy_manager.ui.config import AbaConfig
@@ -126,7 +128,11 @@ class OmarchyManagerApp(App[None]):
         if not self.webapps_ativa:
             self.query_one("#abas", TabbedContent).hide_tab("webapps")
         self.sub_title = self.deteccao.mensagem
-        self.call_after_refresh(self.focar_tabela)
+        if abertura_svc.deve_mostrar():
+            abertura_svc.marcar()
+            self.push_screen(Abertura(f"v{__version__}"), lambda _: self.call_after_refresh(self.focar_tabela))
+        else:
+            self.call_after_refresh(self.focar_tabela)
         if not self.deteccao.omarchy:
             self.notify(self.deteccao.mensagem, severity="warning", timeout=8)
 
