@@ -1,0 +1,41 @@
+#!/bin/bash
+# omarchy-manager-wrapper: 2
+# Sombra do omarchy-launch-webapp, instalada pelo omarchy-manager em ~/.local/bin.
+# Escolhe o perfil do Chrome pelo dominio, em ~/.config/omarchy-webapps/perfis.conf:
+#   dominio = Profile N     perfil desse web app ("www." e ignorado)
+#   default = Profile N     perfil dos web apps sem dominio mapeado (opcional)
+# Dominio mapeado usa o perfil dele; senao, se houver "default", usa o padrao;
+# senao delega sem alteracao. OMARCHY_WEBAPP_DRY=1 so imprime o comando final.
+orig=/usr/share/omarchy/bin/omarchy-launch-webapp
+conf="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-webapps/perfis.conf"
+
+host=${1#*://}; host=${host%%[/?#]*}; host=${host##*@}; host=${host%%:*}
+host=${host,,}; host=${host#www.}
+
+profile=""
+padrao=""
+if [[ -r $conf ]]; then
+  while IFS= read -r line; do
+    line=${line%%#*}
+    [[ $line == *=* ]] || continue
+    key=${line%%=*}; val=${line#*=}
+    key=$(echo $key); val=$(echo $val)
+    key=${key#www.}; key=${key,,}
+    [[ -n $val ]] || continue
+    if [[ $key == default ]]; then
+      padrao=$val
+    elif [[ -n $host && $key == "$host" ]]; then
+      profile=$val
+    fi
+  done <"$conf"
+fi
+[[ -n $profile ]] || profile=$padrao
+
+args=("$@")
+[[ -n $profile ]] && args+=("--profile-directory=$profile")
+
+if [[ -n ${OMARCHY_WEBAPP_DRY:-} ]]; then
+  printf '%q ' "$orig" "${args[@]}"; echo
+  exit 0
+fi
+exec "$orig" "${args[@]}"

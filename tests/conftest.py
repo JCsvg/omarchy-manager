@@ -37,3 +37,17 @@ class ExecutorFalso:
 @pytest.fixture
 def executor() -> ExecutorFalso:
     return ExecutorFalso()
+
+
+@pytest.fixture(autouse=True)
+def _ambiente_isolado(tmp_path_factory, monkeypatch):
+    """Nenhum teste lê ou grava o ~/.config, os .desktop, o wrapper ou o navegador padrão reais."""
+    from omarchy_manager.services import caminhos
+
+    raiz = tmp_path_factory.mktemp("isolado")
+    for var, sub in (("OMARCHY_MANAGER_CHROME_DIR", "chrome"), ("OMARCHY_MANAGER_APPS_DIR", "apps"),
+                     ("OMARCHY_MANAGER_BIN_DIR", "bin"), ("OMARCHY_MANAGER_PERFIS", "perfis.conf")):
+        monkeypatch.setenv(var, str(raiz / sub))
+    monkeypatch.setenv("OMARCHY_MANAGER_NAVEGADOR_PADRAO", "firefox.desktop")
+    monkeypatch.setattr(caminhos, "CONFIG_TOML", raiz / "config.toml")
+    monkeypatch.setattr(caminhos, "BACKUPS_DIR", raiz / "backups")
