@@ -363,7 +363,9 @@ async def test_botoes_com_ctrl_setas_e_hl(app):
         await pilot.press("ctrl+h")
         assert _foco(app) == "comp-pasta"
         await pilot.press("ctrl+left")
-        assert _foco(app) == "comp-oferecer"  # dá a volta
+        assert _foco(app) == "comp-marcar"  # dá a volta
+        await pilot.press("ctrl+h")
+        assert _foco(app) == "comp-oferecer"
         await pilot.press("ctrl+enter")  # sem item marcado: só avisa
         await _pronto(app, pilot)
         assert "Marque ao menos 1 item" in str(app.query_one("#comp-status", Static).render())
